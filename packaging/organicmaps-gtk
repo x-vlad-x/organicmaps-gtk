@@ -1,0 +1,13 @@
+#!/bin/sh
+# Organic Maps (GTK) launcher.
+APPDIR="$(dirname "$(readlink -f "$0")")"
+DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+
+# Same locations as the Qt desktop app: settings in ~/.config/OrganicMaps, maps and bookmarks in
+# ~/.local/share/OrganicMaps.
+mkdir -p "$DATA_HOME/OrganicMaps" "$CONFIG_HOME/OrganicMaps"
+export MWM_RESOURCES_DIR="$APPDIR/data/"
+export MWM_WRITABLE_DIR="$DATA_HOME/OrganicMaps/"
+
+exec "$APPDIR/bin/organicmaps-gtk" "$@"

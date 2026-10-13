@@ -1,0 +1,55 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index e6e30de..05a3a05 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -166,10 +166,10 @@ if (NOT PLATFORM_IPHONE AND NOT PLATFORM_ANDROID)
+   find_package(Qt6 COMPONENTS REQUIRED ${qt_components} OPTIONAL_COMPONENTS Positioning PATHS $ENV{QT_PATH} /opt/homebrew/opt/qt@6 /usr/local/opt/qt@6 /usr/lib/x86_64-linux-gnu/qt6)
+ 
+   set(MINIMUM_REQUIRED_QT_VERSION 6.4.0)
+-  if (Qt6Widgets_VERSION VERSION_LESS ${MINIMUM_REQUIRED_QT_VERSION})
+-    message(FATAL_ERROR "Unsupported Qt version: ${Qt6Widgets_VERSION}, the minimum required is ${MINIMUM_REQUIRED_QT_VERSION}")
++  if (Qt6Core_VERSION VERSION_LESS ${MINIMUM_REQUIRED_QT_VERSION})
++    message(FATAL_ERROR "Unsupported Qt version: ${Qt6Core_VERSION}, the minimum required is ${MINIMUM_REQUIRED_QT_VERSION}")
+   else()
+-    message(STATUS "Found Qt version: ${Qt6Widgets_VERSION}")
++    message(STATUS "Found Qt version: ${Qt6Core_VERSION}")
+   endif()
+ 
+   if (PLATFORM_LINUX AND Qt6_DIR MATCHES "/\\.?linuxbrew/")
+@@ -238,7 +238,7 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
+ 
+ add_subdirectory(libs)
+ 
+-if (PLATFORM_DESKTOP)
++if (PLATFORM_DESKTOP AND NOT OMIM_GTK_APP_DIR)
+   add_subdirectory(dev_sandbox)
+   add_subdirectory(generator)
+   add_subdirectory(tools)
+@@ -247,6 +247,11 @@ if (PLATFORM_DESKTOP)
+   endif()
+ endif()
+ 
++# Native GNOME (GTK4 + libadwaita) front-end, kept outside of the source tree.
++if (OMIM_GTK_APP_DIR)
++  add_subdirectory(${OMIM_GTK_APP_DIR} ${CMAKE_BINARY_DIR}/gtk)
++endif()
++
+ omim_add_test_subdirectory(libs/qt_tstfrm)
+ 
+ if (PLATFORM_ANDROID)
+diff --git a/libs/platform/CMakeLists.txt b/libs/platform/CMakeLists.txt
+index e58525a..e7fa8a3 100644
+--- a/libs/platform/CMakeLists.txt
++++ b/libs/platform/CMakeLists.txt
+@@ -122,8 +122,10 @@ else() # neither iPhone nor Android
+                  "${CMAKE_CURRENT_BINARY_DIR}/platform_qt_version.cpp"
+                   @ONLY)
+ 
++  if (NOT OMIM_GTK_APP_DIR)  # The GTK app provides translated strings itself.
++    append(SRC localization_dummy.cpp)
++  endif()
+   append(SRC
+-    localization_dummy.cpp
+     network_policy_dummy.cpp
+     platform_qt.cpp
+     "${CMAKE_CURRENT_BINARY_DIR}/platform_qt_version.cpp"

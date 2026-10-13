@@ -1,0 +1,12 @@
+# Debian testing (forky), the same base as FuriOS 14. Cross-compiles for arm64 via multiarch.
+FROM docker.io/library/debian:testing
+RUN dpkg --add-architecture arm64 && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      crossbuild-essential-arm64 build-essential cmake ninja-build pkg-config python3 git ca-certificates file \
+    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      libgtk-4-dev:arm64 libadwaita-1-dev:arm64 libgeoclue-2-dev:arm64 \
+      libgl-dev:arm64 libegl-dev:arm64 libgles-dev:arm64 libepoxy-dev:arm64 \
+    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      qt6-base-dev:arm64 qt6-base-dev-tools \
+    && rm -rf /var/lib/apt/lists/*

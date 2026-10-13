@@ -1,0 +1,6 @@
+# Organic Maps sources, cloned by update-organicmaps-gtk.sh
+/organicmaps/
+# Build output
+/build-aarch64/
+/out/
+__pycache__/

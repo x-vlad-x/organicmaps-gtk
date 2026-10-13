@@ -18,6 +18,8 @@ target_compile_definitions(organicmaps-gtk PRIVATE
 )
 target_compile_options(organicmaps-gtk PRIVATE -Wno-missing-field-initializers -Wno-unused-parameter)
 target_link_libraries(organicmaps-gtk PRIVATE map PkgConfig::GTK_APP_DEPS)
-target_link_options(organicmaps-gtk PRIVATE -static-libstdc++ -static-libgcc)
+# The core links its own static FreeType and HarfBuzz: don't export them, or they override the system
+# ones Pango/cairo use (this build of FreeType has no PNG support, so color emoji disappear).
+target_link_options(organicmaps-gtk PRIVATE -static-libstdc++ -static-libgcc -Wl,--exclude-libs,ALL)
 
 install(TARGETS organicmaps-gtk DESTINATION bin)

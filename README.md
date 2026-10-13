@@ -4,6 +4,11 @@ An unofficial native GNOME interface (GTK4 + libadwaita) for [Organic Maps](http
 made for Linux phones. Developed and tested on the FuriLabs FLX1s with FuriOS (Phosh), but it should
 work on any aarch64 phone or tablet running GTK 4.12+ and libadwaita 1.6+.
 
+| | | | |
+|:-:|:-:|:-:|:-:|
+| ![Place page](docs/screenshots/place-page.webp) | ![Search](docs/screenshots/search.webp) | ![Route planning](docs/screenshots/route.webp) | ![Navigation](docs/screenshots/navigation.webp) |
+| ![Night mode](docs/screenshots/night-mode.webp) | ![Map downloader](docs/screenshots/downloader.webp) | ![Map layers](docs/screenshots/layers.webp) | ![Settings](docs/screenshots/settings.webp) |
+
 The core (map rendering, search, routing, map downloads, bookmarks) is the official Organic Maps code,
 unchanged. The interface is new and follows the Android app:
 

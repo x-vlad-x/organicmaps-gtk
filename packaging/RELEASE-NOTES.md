@@ -4,7 +4,7 @@ An unofficial GTK interface for Organic Maps on Linux phones and desktops.
 
 ## Downloads
 
-- **FuriOS phone / ARM64:** `organicmaps-gtk_0.1.0~preview4-1_arm64.deb`.
+- **FuriOS phone / ARM64:** `organicmaps-gtk_0.1.0-preview4-1_arm64.deb`.
 - **Linux desktop / x86_64:** `OrganicMapsGtk-0.1.0-preview4-x86_64.AppImage`.
 - Installation and upgrade instructions: `README.md`.
 

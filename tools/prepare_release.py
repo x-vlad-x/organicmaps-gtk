@@ -92,7 +92,7 @@ def main():
         archive.addfile(member, io.BytesIO(content))
 
     assets = [source_archive, project_archive]
-    for name in (f"organicmaps-gtk_{version.replace('-preview', '~preview')}-1_arm64.deb",
+    for name in (f"organicmaps-gtk_{version}-1_arm64.deb",
                  f"OrganicMapsGtk-{version}-x86_64.AppImage"):
         shutil.copy2(ROOT / "out/packages" / name, destination / name)
         assets.append(destination / name)

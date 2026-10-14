@@ -42,10 +42,10 @@ the lock file; do not bypass the check.
 
 ### FuriOS phone
 
-Copy `organicmaps-gtk_0.1.0~preview4-1_arm64.deb` to the phone. In its directory:
+Copy `organicmaps-gtk_0.1.0-preview4-1_arm64.deb` to the phone. In its directory:
 
 ```sh
-sudo apt install ./organicmaps-gtk_0.1.0~preview4-1_arm64.deb
+sudo apt install ./organicmaps-gtk_0.1.0-preview4-1_arm64.deb
 ```
 
 Close an already running version of the app. If the original SSH installation is

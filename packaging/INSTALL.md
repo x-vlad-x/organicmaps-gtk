@@ -9,12 +9,12 @@ licenses and the corresponding sources of bundled components.
 
 ## FuriOS phone
 
-1. Copy `organicmaps-gtk_0.1.0~preview4-1_arm64.deb` to the phone.
+1. Copy `organicmaps-gtk_0.1.0-preview4-1_arm64.deb` to the phone.
 2. Close any running version of Organic Maps GTK.
 3. Open a terminal in the directory containing the file and run:
 
 ```sh
-sudo apt install ./organicmaps-gtk_0.1.0~preview4-1_arm64.deb
+sudo apt install ./organicmaps-gtk_0.1.0-preview4-1_arm64.deb
 ```
 
 Open **Organic Maps (GTK)** from the application list. To launch the system

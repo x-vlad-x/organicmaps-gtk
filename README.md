@@ -5,6 +5,22 @@ made for Linux phones. Developed and tested on the FuriLabs FLX1s with FuriOS (P
 An x86_64 AppImage is also tested on CachyOS. Other systems need separate testing;
 package dependencies and supported versions are documented in [packaging/README.md](packaging/README.md).
 
+## Download
+
+**[First public preview — 0.1.0-preview4](https://github.com/x-vlad-x/organicmaps-gtk/releases/tag/v0.1.0-preview4)**
+
+| Device | Download | Tested system |
+|:--|:--|:--|
+| Phone · ARM64 | [DEB package](https://github.com/x-vlad-x/organicmaps-gtk/releases/download/v0.1.0-preview4/organicmaps-gtk_0.1.0-preview4-1_arm64.deb) | FuriOS / FuriLabs FLX1s |
+| Desktop · x86_64 | [AppImage](https://github.com/x-vlad-x/organicmaps-gtk/releases/download/v0.1.0-preview4/OrganicMapsGtk-0.1.0-preview4-x86_64.AppImage) | CachyOS · Wayland & X11 |
+
+See the [installation instructions](packaging/INSTALL.md) and
+[release notes](https://github.com/x-vlad-x/organicmaps-gtk/releases/tag/v0.1.0-preview4)
+for requirements, checksums and preview limitations. The AppImage requires glibc 2.41 or newer
+and OpenGL ES 3. Sources and license notices are available with the release.
+
+## Interface
+
 | | | | |
 |:-:|:-:|:-:|:-:|
 | ![Place page](docs/screenshots/place-page.webp) | ![Search](docs/screenshots/search.webp) | ![Route planning](docs/screenshots/route.webp) | ![Navigation](docs/screenshots/navigation.webp) |
@@ -37,9 +53,9 @@ locale.
 
 ## Building and installing
 
-Local preview `.deb` (ARM64 phone) and AppImage (x86_64 desktop) build recipes are
-described in [packaging/README.md](packaging/README.md). These previews are not yet
-public releases. The original SSH installation method remains available below.
+Build recipes for `.deb` (ARM64 phone) and AppImage (x86_64 desktop), including source
+collection and release preparation, are described in [packaging/README.md](packaging/README.md).
+The original SSH installation method remains available below.
 
 Requirements on the build machine (x86_64 Linux): git, podman, ImageMagick, rsync, python3, ssh.
 The phone must be reachable over SSH with key authentication.

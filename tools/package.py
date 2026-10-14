@@ -137,7 +137,9 @@ def build_deb(args, stage, architecture, version):
         "Organic Maps source, resources and map data have additional notices and licenses.\n"
         "See upstream/NOTICE, upstream/DATA_LICENSE.txt, upstream/dep5 and upstream/copyright.html.\n"
         "Full third-party license texts are preserved under upstream/.\n")
-    output = ROOT / "out/packages" / f"organicmaps-gtk_{version}_{architecture}.deb"
+    # Keep the Debian ordering marker in control, but use a GitHub-safe asset filename.
+    filename_version = version.replace("~", "-")
+    output = ROOT / "out/packages" / f"organicmaps-gtk_{filename_version}_{architecture}.deb"
     execute(args, ["dpkg-deb", "--root-owner-group", "--build", inside(args, stage), inside(args, output)])
     execute(args, ["dpkg-deb", "--info", inside(args, output)])
     return output

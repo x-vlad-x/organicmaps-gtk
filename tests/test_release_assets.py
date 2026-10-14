@@ -12,13 +12,14 @@ class SourcePartsTest(unittest.TestCase):
     def test_roundtrip_at_part_boundaries(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "sources.tar"
-            for size in (1, 127, 128, 129, 257):
+            for size in (1, 127, 128, 129, 257, 1):
                 with self.subTest(size=size):
                     content = bytes(n % 251 for n in range(size))
                     path.write_bytes(content)
                     parts = split_source_archive(path, part_size=128)
                     self.assertEqual(b"".join(p.read_bytes() for p in parts), content)
                     self.assertEqual(len(parts), (size + 127) // 128)
+                    self.assertEqual(sorted(path.parent.glob(path.name + ".part*")), parts)
 
     def test_rejects_zero_size(self):
         with self.assertRaises(ValueError):

@@ -27,6 +27,10 @@ def split_source_archive(path, part_size=64 * 1024 * 1024):
             part = path.with_name(path.name + f".part{len(parts) + 1:02}")
             part.write_bytes(content)
             parts.append(part)
+    # A smaller regenerated archive must not leave extra numbered parts behind.
+    for stale in path.parent.glob(path.name + ".part*"):
+        if stale.name.removeprefix(path.name + ".part").isdigit() and stale not in parts:
+            stale.unlink()
     return parts
 
 

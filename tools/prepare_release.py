@@ -18,6 +18,18 @@ def digest(path):
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
+def split_source_archive(path, part_size=64 * 1024 * 1024):
+    if part_size <= 0:
+        raise ValueError("Source part size must be positive")
+    parts = []
+    with path.open("rb") as stream:
+        while content := stream.read(part_size):
+            part = path.with_name(path.name + f".part{len(parts) + 1:02}")
+            part.write_bytes(content)
+            parts.append(part)
+    return parts
+
+
 def main():
     version = (ROOT / "VERSION").read_text().strip()
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
@@ -91,7 +103,21 @@ def main():
         member.mode = 0o644
         archive.addfile(member, io.BytesIO(content))
 
-    assets = [source_archive, project_archive]
+    source_parts = split_source_archive(source_archive)
+    source_guide = destination / "SOURCES.md"
+    source_guide.write_text(
+        "# Corresponding component sources\n\n"
+        f"Download all {len(source_parts)} files named `{source_archive.name}.part*` and "
+        "`SHA256SUMS` into one directory. These sources are not needed to install the application.\n\n"
+        "Verify, join and extract the files:\n\n```sh\n"
+        "sha256sum --check --ignore-missing SHA256SUMS\n"
+        f"cat {source_archive.name}.part* > {source_archive.name}\n"
+        f"printf '%s  %s\\n' '{digest(source_archive)}' '{source_archive.name}' | sha256sum --check\n"
+        f"tar -xf {source_archive.name}\n```\n\n"
+        "Keep the numbered suffixes unchanged. The archive includes exact Debian source packages, "
+        "patches, `.dsc` descriptors and AppImage runtime sources. Reconstruct a Debian package "
+        "with `dpkg-source -x package_version.dsc`. See `LICENSES.md` for build and license details.\n")
+    assets = [*source_parts, source_guide, project_archive]
     for name in (f"organicmaps-gtk_{version}-1_arm64.deb",
                  f"OrganicMapsGtk-{version}-x86_64.AppImage"):
         shutil.copy2(ROOT / "out/packages" / name, destination / name)

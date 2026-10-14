@@ -34,8 +34,9 @@ the project's GitHub Issues.
 The interface uses Apache-2.0. Libraries, voices, fonts and maps retain their own
 licenses; see `LICENSES.md` and the notices inside the packages.
 `OrganicMapsGtk-0.1.0-preview4-sources.tar.gz` contains the interface sources.
-`OrganicMapsGtk-0.1.0-preview4-corresponding-sources.tar` contains exact Debian
-source packages for bundled components and AppImage runtime sources.
+`OrganicMapsGtk-0.1.0-preview4-corresponding-sources.tar.part*` supplies the component
+source archive in numbered parts. See `SOURCES.md` for download and reassembly
+instructions. It includes exact Debian source packages and AppImage runtime sources.
 Checksums are in `SHA256SUMS`.
 
 Based on the [Organic Maps Project](https://organicmaps.app).

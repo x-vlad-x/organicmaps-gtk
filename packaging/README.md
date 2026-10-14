@@ -158,6 +158,10 @@ source archives, binaries, instructions, inventories and SHA256SUMS in
 `out/release/<version>/`. It does not create tags, push code or publish a release.
 See [LICENSES.md](LICENSES.md) for component licensing and modification instructions.
 
+The component source archive is supplied as numbered 64 MiB parts, with checksums
+and reassembly instructions in `SOURCES.md`. Release uploads can transfer the
+parts in parallel. Installers do not need these source files.
+
 The GTK source archive includes `SOURCE-REVISION.json`, which lets packaging
 verify source provenance when `.git` is absent. Building the archive still needs
 network access to fetch the pinned core and the documented build dependencies.

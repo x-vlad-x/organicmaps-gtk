@@ -61,7 +61,10 @@ print("Desktop entry and all five icon sizes resolve")
                     text = (output / "application.log").read_text()
                     if application.poll() is not None:
                         raise RuntimeError(f"The installed app exited during startup: {application.returncode}")
-                    if re.search(r"(?:^|\n)E\(\d+\)|Gtk-ERROR|GLib-ERROR|GtkGLArea error|Can't create OpenGL", text):
+                    # CoMaps logs an error on the first start, before settings.ini exists.
+                    errors = [line for line in text.splitlines()
+                              if re.match(r"E\(\d+\)", line) and "GetFileCreationTime" not in line]
+                    if errors or re.search(r"Gtk-ERROR|GLib-ERROR|GtkGLArea error|Can't create OpenGL", text):
                         raise RuntimeError("The installed app reported a graphics or startup error")
                     if "Api = OpenGLES3" in text and "VTF enabled" in text:
                         break

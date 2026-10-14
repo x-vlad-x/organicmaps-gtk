@@ -7,17 +7,23 @@ package dependencies and supported versions are documented in [packaging/README.
 
 ## Download
 
-**[First public preview — 0.1.0-preview4](https://github.com/x-vlad-x/organicmaps-gtk/releases/tag/v0.1.0-preview4)**
+**[Download 0.1.0-preview5](https://github.com/x-vlad-x/organicmaps-gtk/releases/tag/v0.1.0-preview5)**
 
-| Device | Download | Tested system |
-|:--|:--|:--|
-| Phone · ARM64 | [DEB package](https://github.com/x-vlad-x/organicmaps-gtk/releases/download/v0.1.0-preview4/organicmaps-gtk_0.1.0-preview4-1_arm64.deb) | FuriOS / FuriLabs FLX1s |
-| Desktop · x86_64 | [AppImage](https://github.com/x-vlad-x/organicmaps-gtk/releases/download/v0.1.0-preview4/OrganicMapsGtk-0.1.0-preview4-x86_64.AppImage) | CachyOS · Wayland & X11 |
+DEB, RPM and AppImage are available for **both x86_64 and ARM64**.
+Choose the format for your distribution and the architecture of your device.
 
-See the [installation instructions](https://github.com/x-vlad-x/organicmaps-gtk/blob/d17a4f5f6a54b3b03e5e351279d73bf0a9e31470/packaging/INSTALL.md) and
-[release notes](https://github.com/x-vlad-x/organicmaps-gtk/releases/tag/v0.1.0-preview4)
-for requirements, checksums and preview limitations. The AppImage requires glibc 2.41 or newer
-and OpenGL ES 3. Sources and license notices are available with the release.
+| Format | x86_64 / amd64 | ARM64 / aarch64 | Intended system |
+|:--|:--|:--|:--|
+| DEB | [Download](https://github.com/x-vlad-x/organicmaps-gtk/releases/download/v0.1.0-preview5/organicmaps-gtk_0.1.0-preview5-1_amd64.deb) | [Download](https://github.com/x-vlad-x/organicmaps-gtk/releases/download/v0.1.0-preview5/organicmaps-gtk_0.1.0-preview5-1_arm64.deb) | Debian 13 amd64; FuriOS ARM64 |
+| RPM | [Download](https://github.com/x-vlad-x/organicmaps-gtk/releases/download/v0.1.0-preview5/organicmaps-gtk-0.1.0-preview5-1.fc44.x86_64.rpm) | [Download](https://github.com/x-vlad-x/organicmaps-gtk/releases/download/v0.1.0-preview5/organicmaps-gtk-0.1.0-preview5-1.fc44.aarch64.rpm) | Fedora 44 |
+| AppImage | [Download](https://github.com/x-vlad-x/organicmaps-gtk/releases/download/v0.1.0-preview5/OrganicMapsGtk-0.1.0-preview5-x86_64.AppImage) | [Download](https://github.com/x-vlad-x/organicmaps-gtk/releases/download/v0.1.0-preview5/OrganicMapsGtk-0.1.0-preview5-aarch64.AppImage) | glibc 2.41+ and OpenGL ES 3 |
+
+See the [installation instructions](https://github.com/x-vlad-x/organicmaps-gtk/blob/v0.1.0-preview5/packaging/INSTALL.md) and
+[release notes](https://github.com/x-vlad-x/organicmaps-gtk/releases/tag/v0.1.0-preview5)
+for requirements, checksums and preview limitations. Both RPMs passed installation,
+desktop icon and map-rendering checks in Fedora 44 containers. Earlier phone builds
+were tested on FuriOS / FuriLabs FLX1s; the x86_64 AppImage was tested on CachyOS.
+Sources, a rebuildable source RPM and license notices are available with the release.
 
 ## Interface
 
@@ -55,8 +61,7 @@ locale.
 
 Development builds provide DEB, RPM and AppImage for both x86_64 and ARM64.
 Build recipes, source collection and release preparation are described in
-[packaging/README.md](packaging/README.md). These builds are separate from the
-published preview linked above.
+[packaging/README.md](packaging/README.md).
 The original SSH installation method remains available below.
 
 Requirements on the build machine (x86_64 Linux): git, podman, ImageMagick, rsync, python3, ssh.

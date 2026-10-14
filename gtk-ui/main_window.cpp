@@ -15,7 +15,6 @@
 
 #include "platform/platform.hpp"
 #include "platform/settings.hpp"
-#include "platform/style_utils.hpp"
 
 #include "indexer/map_style.hpp"
 
@@ -53,7 +52,7 @@ char const * MyPositionIcon(location::EMyPositionMode mode)
 MainWindow::MainWindow(AdwApplication * app)
 {
   m_window = ADW_APPLICATION_WINDOW(adw_application_window_new(GTK_APPLICATION(app)));
-  gtk_window_set_title(GTK_WINDOW(m_window), "Lichen");
+  gtk_window_set_title(GTK_WINDOW(m_window), kAppName);
   gtk_window_set_icon_name(GTK_WINDOW(m_window), kAppId);
   gtk_window_set_default_size(GTK_WINDOW(m_window), 420, 860);
 
@@ -150,7 +149,7 @@ void MainWindow::BuildUi()
   auto * mapToolbar = adw_toolbar_view_new();
   adw_toolbar_view_add_top_bar(ADW_TOOLBAR_VIEW(mapToolbar), adw_header_bar_new());
   adw_toolbar_view_set_content(ADW_TOOLBAR_VIEW(mapToolbar), GTK_WIDGET(m_sheet));
-  m_mapPage = adw_navigation_page_new(mapToolbar, "Lichen");
+  m_mapPage = adw_navigation_page_new(mapToolbar, kAppName);
   adw_navigation_page_set_tag(m_mapPage, "map");
   adw_navigation_view_add(m_nav, m_mapPage);
 
@@ -289,8 +288,7 @@ void MainWindow::BuildMapControls(GtkWidget * overlay)
   // Keep map attribution readable and keyboard-accessible, with links to both sources.
   m_mapAttribution = gtk_label_new(nullptr);
   gtk_label_set_markup(GTK_LABEL(m_mapAttribution),
-      "Map data © <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> and "
-      "<a href=\"https://organicmaps.app\">Organic Maps</a>");
+                       (std::string(kMapDataMarkup) + " · " + kBasedOnMarkup).c_str());
   gtk_label_set_wrap(GTK_LABEL(m_mapAttribution), TRUE);
   gtk_label_set_justify(GTK_LABEL(m_mapAttribution), GTK_JUSTIFY_CENTER);
   gtk_widget_set_halign(m_mapAttribution, GTK_ALIGN_CENTER);
@@ -491,7 +489,7 @@ void MainWindow::UpdateKeepScreenOn()
   bool const keep = KeepScreenOn() && !m_suspended;
   if (keep && !m_keepScreenOnCookie)
     m_keepScreenOnCookie = gtk_application_inhibit(gtk_window_get_application(GTK_WINDOW(m_window)),
-                                                   GTK_WINDOW(m_window), GTK_APPLICATION_INHIBIT_IDLE, "Lichen");
+                                                   GTK_WINDOW(m_window), GTK_APPLICATION_INHIBIT_IDLE, kAppName);
   else if (!keep && m_keepScreenOnCookie)
   {
     gtk_application_uninhibit(gtk_window_get_application(GTK_WINDOW(m_window)), m_keepScreenOnCookie);
@@ -582,7 +580,7 @@ void MainWindow::OpenFile(GFile * file)
     m_bookmarks->ImportFile(p);
     return;
   }
-  // geo:, om:// and omaps.app links.
+  // geo:, cm://, comaps:// and comaps.at links.
   char * uri = g_file_get_uri(file);
   if (!uri)
     return;
@@ -713,20 +711,19 @@ void MainWindow::ShowMenu()
       Toast(T("unknown_current_position"));
       return;
     }
-    auto const data = GetFramework().GetShareDataForMyPosition(last->GetLatLon());
+    auto const latLon = last->GetLatLon();
+    auto const data = MakeShareData(latLon.m_lat, latLon.m_lon, {}, true);
     CopyToClipboard(data.m_text.empty() ? data.m_url : data.m_text);
     Toast(TF("copied_to_clipboard", {data.m_url}));
   });
   addRow("emblem-system-symbolic", T("settings"), [this]() { ShowSettings(); });
-  addRow("help-about-symbolic", T("about_menu_title"), [this]() { ShowAboutDialog(*this); });
+  // CoMaps titles its item "About CoMaps"; this one opens the About dialog of the app.
+  addRow("help-about-symbolic", T("about_help"), [this]() { ShowAboutDialog(*this); });
 
   auto * content = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
   gtk_box_append(GTK_BOX(content), list);
   auto * attribution = gtk_label_new(nullptr);
-  gtk_label_set_markup(GTK_LABEL(attribution),
-      "Based on the <a href=\"https://organicmaps.app\">Organic Maps Project</a>\n"
-      "Map data © <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> and "
-      "<a href=\"https://organicmaps.app\">Organic Maps</a>");
+  gtk_label_set_markup(GTK_LABEL(attribution), (std::string(kBasedOnMarkup) + "\n" + kMapDataMarkup).c_str());
   gtk_label_set_wrap(GTK_LABEL(attribution), TRUE);
   gtk_label_set_justify(GTK_LABEL(attribution), GTK_JUSTIFY_CENTER);
   gtk_widget_add_css_class(attribution, "caption");
@@ -744,14 +741,10 @@ void MainWindow::ShowLayers()
 
 void MainWindow::SyncNightMode()
 {
-  if (style_utils::GetNightModeSetting() != style_utils::NightMode::System)
+  if (GetNightMode() != NightMode::System)
     return;
-  auto & fw = GetFramework();
   bool const dark = adw_style_manager_get_dark(adw_style_manager_get_default());
-  auto const current = fw.GetMapStyle();
-  auto const desired = dark ? GetDarkMapStyleVariant(current) : GetLightMapStyleVariant(current);
-  if (desired != current)
-    fw.SetMapStyle(desired);
+  GetFramework().SwitchToMapAppearance(dark ? MapAppearance::Dark : MapAppearance::Light);
 }
 
 void MainWindow::OnSuspendedChanged()

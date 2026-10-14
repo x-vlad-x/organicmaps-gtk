@@ -41,7 +41,7 @@ RouterButton const kRouters[] = {
     {RouterType::Ruler, "om-ruler-symbolic"},
 };
 
-std::string CarTurnIcon(CarDirection dir, uint32_t exitNum)
+std::string CarTurnIcon(CarDirection dir)
 {
   switch (dir)
   {
@@ -54,12 +54,10 @@ std::string CarTurnIcon(CarDirection dir, uint32_t exitNum)
   case CarDirection::TurnSlightLeft: return "om-turn-left-slight";
   case CarDirection::UTurnLeft: return "om-turn-uleft";
   case CarDirection::UTurnRight: return "om-turn-uright";
+  // CoMaps has one roundabout icon; the exit number is shown over it, as in its Android app.
   case CarDirection::EnterRoundAbout:
   case CarDirection::LeaveRoundAbout:
-  case CarDirection::StayOnRoundAbout:
-    if (exitNum >= 1 && exitNum <= 12)
-      return "om-roundabout-exit-" + std::to_string(exitNum);
-    return "om-turn-round";
+  case CarDirection::StayOnRoundAbout: return "om-turn-round";
   case CarDirection::ReachedYourDestination: return "om-turn-finish";
   case CarDirection::ExitHighwayToLeft: return "om-exit-highway-left";
   case CarDirection::ExitHighwayToRight: return "om-exit-highway-right";
@@ -426,8 +424,8 @@ void RoutingUi::SetPointFromPlacePage(RouteMarkType type)
   if (point.m_title.empty())
     point.m_title = info.GetSecondarySubtitle();
   point.m_position = info.GetMercator();
-  bool const optimize = type == RouteMarkType::Intermediate && routing::RoutingOptions::LoadRouteOptimizationFromSettings();
-  rm.AddRoutePoint(std::move(point), optimize);
+  // CoMaps always places a new stop in the best order, as its Android app does.
+  rm.AddRoutePoint(std::move(point), type == RouteMarkType::Intermediate);
 
   if (type == RouteMarkType::Finish)
   {
@@ -538,7 +536,7 @@ void RoutingUi::UpdatePointsView()
   if (!hasStart)
     addRow("start", T("p2p_from_here") + "…", true);
   if (!hasFinish)
-    addRow("finish", T("pick_destination") + "…", true);
+    addRow("finish", T("destination") + "…", true);
 }
 
 void RoutingUi::BuildRouteIfReady()
@@ -577,7 +575,7 @@ void RoutingUi::ShowPlanningStatus()
   ClearBox(m_chartBox);
   if (!rm.IsRouteBuilt())
   {
-    gtk_label_set_text(GTK_LABEL(m_status), T("pick_destination").c_str());
+    gtk_label_set_text(GTK_LABEL(m_status), T("destination").c_str());
     gtk_widget_set_visible(m_statusDetails, FALSE);
     gtk_widget_set_sensitive(m_startButton, FALSE);
     return;
@@ -601,16 +599,23 @@ void RoutingUi::ShowPlanningStatus()
   }
   if (type == RouterType::Pedestrian || type == RouterType::Bicycle)
   {
-    ElevationInfo ei;
-    if (rm.GetRouteElevationInfo(ei))
+    RoutingManager::DistanceAltitude da;
+    if (rm.GetRouteAltitudesAndDistancesM(da))
     {
-      auto const alt = ei.CalculateAltitudesInfo(ElevationInfo::kDefThresholdMWM);
+      da.Simplify();
+      uint32_t ascent = 0, descent = 0;
+      da.CalculateAscentDescent(ascent, descent);
       if (!details.empty())
         details += "   ";
-      details += "↗ " + platform::Distance::FormatAltitude(alt.GetTotalAscent()) + "  ↘ " +
-                 platform::Distance::FormatAltitude(alt.GetTotalDescent());
-      if (!ei.IsEmpty())
-        gtk_box_append(GTK_BOX(m_chartBox), MakeElevationChart(ei, 90));
+      details += "↗ " + platform::Distance::FormatAltitude(ascent) + "  ↘ " +
+                 platform::Distance::FormatAltitude(descent);
+      if (da.GetSize() > 1)
+      {
+        ElevationLines lines(1);
+        for (size_t i = 0; i < da.GetSize(); ++i)
+          lines[0].emplace_back(da.m_distances[i], da.m_altitudes[i]);
+        gtk_box_append(GTK_BOX(m_chartBox), MakeElevationChart(std::move(lines), 90));
+      }
     }
   }
   gtk_label_set_text(GTK_LABEL(m_status), status.c_str());
@@ -782,7 +787,7 @@ void RoutingUi::UpdateNavigation()
   }
 
   bool const pedestrian = rm.GetRouter() == RouterType::Pedestrian || rm.GetRouter() == RouterType::Transit;
-  std::string const icon = pedestrian ? PedestrianTurnIcon(info.m_pedestrianTurn) : CarTurnIcon(info.m_turn, info.m_exitNum);
+  std::string const icon = pedestrian ? PedestrianTurnIcon(info.m_pedestrianTurn) : CarTurnIcon(info.m_turn);
   if (icon != m_lastTurnIcon)
   {
     m_lastTurnIcon = icon;
@@ -798,7 +803,7 @@ void RoutingUi::UpdateNavigation()
   // Next turn hint when it comes right after the current one.
   bool const showNext = !pedestrian && info.m_nextTurn != CarDirection::None && info.m_distToTurn.GetDistance() < 1000;
   if (showNext)
-    gtk_image_set_from_icon_name(GTK_IMAGE(m_nextTurnImage), CarTurnIcon(info.m_nextTurn, 0).c_str());
+    gtk_image_set_from_icon_name(GTK_IMAGE(m_nextTurnImage), CarTurnIcon(info.m_nextTurn).c_str());
   gtk_widget_set_visible(m_nextTurnBox, showNext);
 
   // Lanes: arrows for each lane, the recommended direction highlighted (like the Android lanes strip).

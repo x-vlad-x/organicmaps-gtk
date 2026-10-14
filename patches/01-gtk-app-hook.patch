@@ -1,22 +1,45 @@
+diff --git a/3party/CMakeLists.txt b/3party/CMakeLists.txt
+index 2146a5f..e1de661 100644
+--- a/3party/CMakeLists.txt
++++ b/3party/CMakeLists.txt
+@@ -44,7 +44,8 @@ if (NOT WITH_SYSTEM_PROVIDED_3PARTY)
+   # Add protobuf library.
+   add_subdirectory(protobuf)
+ 
+-  if (NOT PLATFORM_LINUX)
++  # The GTK app links them statically, so one package runs with any system ICU version.
++  if (NOT PLATFORM_LINUX OR OMIM_GTK_APP_DIR)
+     add_subdirectory(freetype)
+     add_subdirectory(icu)
+     add_subdirectory(harfbuzz)
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index e6e30de..05a3a05 100644
+index 71868df..93561b3 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -166,10 +166,10 @@ if (NOT PLATFORM_IPHONE AND NOT PLATFORM_ANDROID)
-   find_package(Qt6 COMPONENTS REQUIRED ${qt_components} OPTIONAL_COMPONENTS Positioning PATHS $ENV{QT_PATH} /opt/homebrew/opt/qt@6 /usr/local/opt/qt@6 /usr/lib/x86_64-linux-gnu/qt6)
+@@ -173,7 +173,7 @@ if (USE_PCH)
+ endif()
  
-   set(MINIMUM_REQUIRED_QT_VERSION 6.4.0)
--  if (Qt6Widgets_VERSION VERSION_LESS ${MINIMUM_REQUIRED_QT_VERSION})
--    message(FATAL_ERROR "Unsupported Qt version: ${Qt6Widgets_VERSION}, the minimum required is ${MINIMUM_REQUIRED_QT_VERSION}")
-+  if (Qt6Core_VERSION VERSION_LESS ${MINIMUM_REQUIRED_QT_VERSION})
-+    message(FATAL_ERROR "Unsupported Qt version: ${Qt6Core_VERSION}, the minimum required is ${MINIMUM_REQUIRED_QT_VERSION}")
-   else()
--    message(STATUS "Found Qt version: ${Qt6Widgets_VERSION}")
-+    message(STATUS "Found Qt version: ${Qt6Core_VERSION}")
-   endif()
+ # Should be on the root level, not in 3party, so tests can get these dependencies.
+-if (PLATFORM_LINUX)
++if (PLATFORM_LINUX AND NOT OMIM_GTK_APP_DIR)
+   find_package(ICU COMPONENTS uc i18n data REQUIRED)
+   find_package(Freetype REQUIRED)
+   find_package(harfbuzz REQUIRED)
+@@ -221,6 +221,8 @@ elseif(EXISTS "${OMIM_ROOT}/.venv")
+   message(STATUS "==> Python Virtual Environment detected : ${OMIM_ROOT}/.venv"  "  ==>  "  "Using python command: ${Python3_EXECUTABLE}" )
+ endif()
  
-   if (PLATFORM_LINUX AND Qt6_DIR MATCHES "/\\.?linuxbrew/")
-@@ -238,7 +238,7 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
++# The GTK app is built from sources already prepared by configure.sh, which needs protobuf.
++if (NOT OMIM_GTK_APP_DIR)
+ execute_process(
+     COMMAND ${Python3_EXECUTABLE} -c "import google.protobuf;
+ print(google.protobuf.__version__)"
+@@ -239,11 +241,12 @@ if(PROTOBUF_CHECK EQUAL 0)
+ else()
+     message(FATAL_ERROR "Python protobuf not found. Run ./configure.sh to provision a local .venv with the correct version (>=3.20, <4.0), or set SKIP_PYTHON_VENV=1 to manage protobuf via your system Python.")
+ endif()
++endif()
+ 
  
  add_subdirectory(libs)
  
@@ -25,7 +48,7 @@ index e6e30de..05a3a05 100644
    add_subdirectory(dev_sandbox)
    add_subdirectory(generator)
    add_subdirectory(tools)
-@@ -247,6 +247,11 @@ if (PLATFORM_DESKTOP)
+@@ -256,6 +259,11 @@ if (PLATFORM_DESKTOP)
    endif()
  endif()
  
@@ -38,10 +61,10 @@ index e6e30de..05a3a05 100644
  
  if (PLATFORM_ANDROID)
 diff --git a/libs/platform/CMakeLists.txt b/libs/platform/CMakeLists.txt
-index e58525a..e7fa8a3 100644
+index 99b7aca..f669887 100644
 --- a/libs/platform/CMakeLists.txt
 +++ b/libs/platform/CMakeLists.txt
-@@ -122,8 +122,10 @@ else() # neither iPhone nor Android
+@@ -113,8 +113,10 @@ else() # neither iPhone nor Android
                   "${CMAKE_CURRENT_BINARY_DIR}/platform_qt_version.cpp"
                    @ONLY)
  

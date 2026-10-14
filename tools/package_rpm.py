@@ -9,8 +9,9 @@ import shutil
 import subprocess
 import tarfile
 
+import core_source
 from package import ROOT, container_path, project_state
-from package_matrix import package_name, srpm_name, stage_path
+from package_matrix import APPIMAGE_NAME, PACKAGE, debian_version, package_name, srpm_name, stage_path
 
 
 def full_sources(destination):
@@ -18,18 +19,19 @@ def full_sources(destination):
     commit, dirty = project_state()
     names = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).decode().split("\0")
     names = sorted(filter(None, names))
-    if any(".local." in name or name.startswith(("out/", "organicmaps/")) for name in names):
+    if any(".local." in name or name.startswith(("out/", "core/")) for name in names):
         raise ValueError("Private planning or generated files must not enter the source RPM")
-    core = ROOT / "organicmaps"
-    core_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=core, text=True).strip()
-    upstream = subprocess.check_output(["git", "ls-files", "--recurse-submodules", "-z"], cwd=core).decode().split("\0")
-    metadata = dict(commit=commit, dirty=dirty, core_commit=core_commit,
+    core = core_source.CORE
+    # The core's tracked files plus what tools/prepare-core.sh downloaded and generated (world
+    # maps, styles, symbols, strings), so the RPM builds without network access.
+    upstream = core_source.tracked_files() + core_source.generated_files()
+    metadata = dict(commit=commit, dirty=dirty, core_commit=core_source.commit(),
                     core_qt_version=subprocess.check_output(["bash", "tools/unix/version.sh", "qt_version"], cwd=core, text=True).strip(),
                     core_int_version=subprocess.check_output(["bash", "tools/unix/version.sh", "qt_int_version"], cwd=core, text=True).strip(),
                     files={name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in names})
-    prefix = f"Lichen-{version}"
+    prefix = f"{APPIMAGE_NAME}-{version}"
     with tarfile.open(destination, "w:gz", compresslevel=2) as archive:
-        for name in names + ["organicmaps/" + n for n in filter(None, upstream)]:
+        for name in names + ["core/" + n for n in upstream]:
             path = ROOT / name
             if not path.exists() and not path.is_symlink():
                 raise ValueError(f"Missing source file: {name}")
@@ -53,19 +55,19 @@ def main():
             shutil.rmtree(workspace / name)
     sources = workspace / "SOURCES"
     sources.mkdir(parents=True, exist_ok=True)
-    full_sources(sources / f"Lichen-{version}-full-sources.tar.gz")
+    full_sources(sources / f"{APPIMAGE_NAME}-{version}-full-sources.tar.gz")
     specs = workspace / "SPECS"
     specs.mkdir(exist_ok=True)
-    spec = (ROOT / "packaging/lichen.spec").read_text().replace(
-        "@APP_VERSION@", version).replace("@RPM_VERSION@", version.replace("-preview", "~preview"))
-    (specs / "lichen.spec").write_text(spec)
+    spec = (ROOT / f"packaging/{PACKAGE}.spec").read_text().replace(
+        "@APP_VERSION@", version).replace("@RPM_VERSION@", debian_version(version))
+    (specs / f"{PACKAGE}.spec").write_text(spec)
     def execute(command):
         subprocess.run(["podman", "run", "--rm", "--network=none", "--userns=keep-id",
                         "-v", f"{ROOT}:/src:z", "-w", "/src",
                         args.container, *map(str, command)], check=True)
     execute(["rpmbuild", "-ba" if args.arch == "amd64" else "-bb",
              "--define", f"_topdir {container_path(workspace)}", "--define", "_buildhost localhost",
-             "--define", f"_smp_build_ncpus {args.jobs}", container_path(specs / "lichen.spec")])
+             "--define", f"_smp_build_ncpus {args.jobs}", container_path(specs / f"{PACKAGE}.spec")])
     binaries = list((workspace / "RPMS").glob("*/*.rpm"))
     if len(binaries) != 1:
         raise ValueError(f"Expected exactly one binary RPM, got {binaries}")

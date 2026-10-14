@@ -1,24 +1,29 @@
-# Licenses and sources supplied with the preview
+# Licenses and sources supplied with the prototype
 
 The GTK interface is distributed under Apache-2.0 (`LICENSE`, `NOTICE`). This
-license does not replace the licenses of the Organic Maps core, map data, icons,
+license does not replace the licenses of the CoMaps core, map data, icons,
 translations, fonts or bundled libraries.
 
-## Organic Maps and map data
+## CoMaps and map data
 
-The core is pinned to `b20d1417eef1e3c63a447ac8658db4307a066024` and retains its
-Apache-2.0 license, notices and third-party texts. The build applies the included
-GTK integration patch. Attribution and links to the Organic Maps Project and
-OpenStreetMap are shown on the map, in the main menu and in About.
+The core is [CoMaps](https://www.comaps.app), pinned in `tools/core.env` to commit
+`47ae541a9fc02fa2cd11c8c9f42ab32b1997947b` of https://codeberg.org/comaps/comaps.
+It is licensed under Apache-2.0; its `NOTICE` names My.com B.V. (Mail.Ru Group),
+the Organic Maps Contributors and the CoMaps Contributors. The packages keep that
+notice, the CoMaps `LICENSE`, `data/copyright.html`, `CONTRIBUTORS` and all
+third-party license texts under `upstream/`. The build applies the included GTK
+integration patch and links the bundled ICU, FreeType and HarfBuzz statically.
 
-The binary maps and other compiled data have the additional terms in upstream
-`DATA_LICENSE.txt`. Its third condition requires explicit written permission from
-the Organic Maps team for white-labeling or rebranding. Releases up to 0.1.0-preview5
-used the Organic Maps name and upstream icon. From 0.1.0-preview6 the interface is
-named Lichen with its own icon, keeps the attribution required by the data license
-("Map data © OpenStreetMap and Organic Maps" with links, on the map, in the main
-menu and in About) and does not claim endorsement. Do not publish a Lichen release
-until Organic Maps has granted that permission in writing.
+CoMaps has no separate data license. The world maps and the country maps downloaded
+in the app are built from OpenStreetMap data, available under the Open Database
+License (ODbL). "Based on CoMaps" and "Map data © OpenStreetMap contributors", with
+links, are shown on the map, in the main menu and in About. Lichen is not affiliated
+with or endorsed by CoMaps.
+
+The world maps, drawing rules, symbols and generated strings are not stored in the
+CoMaps repository. `tools/prepare-core.sh` downloads the world maps (checking the
+sizes and SHA-1 digests listed in `data/countries.txt`) and generates the rest with
+the core's own `configure.sh`. The source RPM contains these prepared files.
 
 ## Software in the packages
 
@@ -30,14 +35,14 @@ until Organic Maps has granted that permission in writing.
 - The DEB and AppImage link the GCC C++ runtime statically. Its notices, source package versions,
   Built-Using records and GCC Runtime Library Exception are supplied separately.
 - The Fedora RPM uses the system GCC runtime dynamically. The source RPM contains
-  the interface, patched Organic Maps core and all recursive submodule sources,
-  plus a spec file that rebuilds the package without downloading project sources.
+  the interface, the patched and prepared CoMaps core and all recursive submodule
+  sources, plus a spec file that rebuilds the package without downloading project sources.
 - The AppImage runtime has its own MIT license and bundled third-party notices,
   including the LGPL libfuse license. `runtime-sources.json` pins its source commit
   and the source archives for libfuse and squashfuse used by its build scripts.
 
-Inside the installed packages, see `usr/share/doc/lichen` (or
-`/usr/share/doc/lichen` for the DEB). The `upstream`, `compiler-runtime`,
+Inside the installed packages, see `usr/share/doc/lichen-devel` (or
+`/usr/share/doc/lichen-devel` for the DEB). The `upstream`, `compiler-runtime`,
 `bundled` and `appimage-runtime` directories contain the applicable notices and
 license texts. The last two directories are specific to the AppImage.
 
@@ -50,7 +55,7 @@ patches, retrieved using SHA-256 from signed APT metadata, plus AppImage runtime
 sources. The JSON inventories identify the source versions of the shipped files.
 
 For Fedora, install the spec's build dependencies and rebuild the source RPM with
-`rpmbuild --rebuild lichen-<version>-1.fc44.src.rpm`. The source RPM is
+`rpmbuild --rebuild lichen-devel-<version>-1.fc44.src.rpm`. The source RPM is
 shared by x86_64 and aarch64; build it natively on the target architecture.
 
 Use `dpkg-source -x package_version.dsc` to reconstruct a Debian source package.

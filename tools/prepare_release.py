@@ -9,7 +9,7 @@ import subprocess
 import tarfile
 
 from collect_debian_sources import fetch_file, verify_dsc
-from package_matrix import TARGETS, ARCHITECTURES, stage_path, package_name, srpm_name
+from package_matrix import APPIMAGE_NAME, ARCHITECTURES, DOC, PRIVATE, TARGETS, stage_path, package_name, srpm_name
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -44,7 +44,7 @@ def main():
     destination.mkdir(parents=True, exist_ok=True)
     stages = {target: ROOT / stage_path(target) for target in TARGETS}
     for target, stage in stages.items():
-        info = json.loads((stage / "usr/libexec/lichen/build-info.json").read_text())
+        info = json.loads((stage / PRIVATE / "build-info.json").read_text())
         if (info["project_commit"] != commit or info["project_dirty"] or info["version"] != version
                 or info["architecture"] != target.split("-", 1)[1]):
             raise RuntimeError(f"Rebuild packages from the clean release commit: {stage}")
@@ -55,9 +55,9 @@ def main():
     for target, stage in stages.items():
         if target.startswith("rpm-"):
             continue  # RPM uses system libraries and supplies a complete rebuildable source RPM.
-        inventories[f"compiler-runtime-{target}.json"] = stage / "usr/share/doc/lichen/compiler-runtime/sources.json"
+        inventories[f"compiler-runtime-{target}.json"] = stage / DOC / "compiler-runtime/sources.json"
         if target.startswith("appimage-"):
-            inventories[f"bundled-packages-{target}.json"] = stage / "usr/share/doc/lichen/bundled/bundled-packages.json"
+            inventories[f"bundled-packages-{target}.json"] = stage / DOC / "bundled/bundled-packages.json"
         directory = source_root / target
         metadata = json.loads((directory / "sources.json").read_text())
         if metadata["errors"]:
@@ -92,7 +92,7 @@ def main():
         fetch_file(record, runtime_dir)
         source_files["appimage-runtime/" + record["name"]] = runtime_dir / record["name"]
 
-    source_archive = destination / f"Lichen-{version}-corresponding-sources.tar"
+    source_archive = destination / f"{APPIMAGE_NAME}-{version}-corresponding-sources.tar"
     with tarfile.open(source_archive, "w") as archive:
         for name, path in sorted(source_files.items()):
             archive.add(path, arcname=name, recursive=False)
@@ -101,10 +101,10 @@ def main():
 
     names = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).decode().split("\0")
     names = sorted(filter(None, names))
-    if any(".local." in name or name.startswith(("out/", "organicmaps/")) for name in names):
+    if any(".local." in name or name.startswith(("out/", "core/")) for name in names):
         raise RuntimeError("Local planning files or build output must not enter release source archives")
     manifest = {name: digest(ROOT / name) for name in names}
-    project_archive = destination / f"Lichen-{version}-sources.tar.gz"
+    project_archive = destination / f"{APPIMAGE_NAME}-{version}-sources.tar.gz"
     with tarfile.open(project_archive, "w:gz") as archive:
         for name in names:
             archive.add(ROOT / name, arcname=name, recursive=False)

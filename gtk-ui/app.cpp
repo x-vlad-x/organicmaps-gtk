@@ -1,6 +1,11 @@
 #include "app.hpp"
 
+#include "l10n.hpp"
 #include "main_window.hpp"
+
+#include "map/framework.hpp"
+
+#include "ge0/url_generator.hpp"
 
 #include "base/assert.hpp"
 
@@ -94,5 +99,25 @@ void CopyToClipboard(std::string const & text)
 {
   GdkClipboard * cb = gdk_display_get_clipboard(gdk_display_get_default());
   gdk_clipboard_set_text(cb, text.c_str());
+}
+ShareData MakeShareData(double lat, double lon, std::string const & name, bool myPosition)
+{
+  double const zoom = GetFramework().GetDrawScale();
+  ShareData data;
+  // A web link that opens the place in CoMaps or a browser, as the CoMaps Android app shares it.
+  data.m_url = Framework::CodeGe0url(lat, lon, zoom, name);
+  for (std::string_view const prefix : {"comaps://", "cm://"})
+  {
+    if (data.m_url.starts_with(prefix))
+    {
+      data.m_url = "https://comaps.at/" + data.m_url.substr(prefix.size());
+      break;
+    }
+  }
+  // Coordinates without the zoom and name parameters, which add little and look cryptic.
+  auto geo = ge0::GenerateGeoUri(lat, lon, zoom, name);
+  geo = geo.substr(0, geo.find('?'));
+  data.m_text = TF(myPosition ? "my_position_share_email" : "bookmark_share_email_subject", {data.m_url, geo});
+  return data;
 }
 }  // namespace lichen

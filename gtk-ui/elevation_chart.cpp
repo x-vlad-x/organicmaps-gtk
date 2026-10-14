@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <vector>
 
 namespace lichen
@@ -100,24 +101,42 @@ void Draw(GtkDrawingArea * area, cairo_t * cr, int width, int height, gpointer d
 }
 }  // namespace
 
-GtkWidget * MakeElevationChart(ElevationInfo const & info, int height)
+ElevationLines GetElevationLines(ElevationInfo const & info)
+{
+  // CoMaps keeps one list of points and the distance at which each line of the track starts.
+  auto const & starts = info.GetSegmentsDistances();
+  ElevationLines lines;
+  size_t next = 1;
+  for (auto const & p : info.GetPoints())
+  {
+    bool newLine = lines.empty();
+    while (next < starts.size() && p.m_distance >= starts[next])
+    {
+      newLine = true;
+      ++next;
+    }
+    if (newLine)
+      lines.emplace_back();
+    lines.back().emplace_back(p.m_distance, p.m_point.GetAltitude());
+  }
+  return lines;
+}
+
+GtkWidget * MakeElevationChart(ElevationLines lines, int height)
 {
   auto * data = new ChartData;
   data->m_minAlt = std::numeric_limits<double>::max();
   data->m_maxAlt = std::numeric_limits<double>::lowest();
-  for (auto const & line : info.GetLines())
+  for (auto const & line : lines)
   {
-    std::vector<std::pair<double, double>> pts;
-    pts.reserve(line.size());
-    for (auto const & p : line)
+    for (auto const & [distance, altitude] : line)
     {
-      pts.emplace_back(p.m_distance, p.m_altitude);
-      data->m_maxDist = std::max(data->m_maxDist, p.m_distance);
-      data->m_minAlt = std::min<double>(data->m_minAlt, p.m_altitude);
-      data->m_maxAlt = std::max<double>(data->m_maxAlt, p.m_altitude);
+      data->m_maxDist = std::max(data->m_maxDist, distance);
+      data->m_minAlt = std::min(data->m_minAlt, altitude);
+      data->m_maxAlt = std::max(data->m_maxAlt, altitude);
     }
-    data->m_lines.push_back(std::move(pts));
   }
+  data->m_lines = std::move(lines);
 
   auto * area = gtk_drawing_area_new();
   gtk_widget_set_size_request(area, -1, height);

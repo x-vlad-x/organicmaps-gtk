@@ -4,13 +4,13 @@
 # Keep the remaining distribution hardening flags.
 %global _lto_cflags %{nil}
 
-Name:           lichen
+Name:           lichen-devel
 Version:        @RPM_VERSION@
 Release:        1%{?dist}
-Summary:        Unofficial GTK interface for offline maps and navigation
+Summary:        Unofficial GTK interface for offline maps (CoMaps core prototype)
 License:        Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND BSD-Protection AND BSL-1.0 AND FTL AND MIT AND SGI-B-2.0 AND Zlib AND OFL-1.1 AND Unicode-3.0 AND ODbL-1.0
 URL:            https://github.com/x-vlad-x/lichen
-Source0:        Lichen-%{app_version}-full-sources.tar.gz
+Source0:        LichenPreview-%{app_version}-full-sources.tar.gz
 BuildRequires:  gcc-c++ cmake ninja-build pkgconf-pkg-config python3 git
 BuildRequires:  gtk4-devel libadwaita-devel geoclue2-devel qt6-qtbase-devel
 BuildRequires:  libglvnd-devel libepoxy-devel ImageMagick desktop-file-utils
@@ -19,23 +19,24 @@ Requires:       espeak-ng hicolor-icon-theme
 # libepoxy loads the GLES/EGL entry points dynamically, outside automatic ELF dependencies.
 Requires:       libglvnd-gles%{?_isa} libglvnd-egl%{?_isa}
 Recommends:     geoclue2 iio-sensor-proxy
-# Published as organicmaps-gtk up to 0.1.0-preview5.
-Obsoletes:      organicmaps-gtk < 0.1.0~preview6
-Provides:       organicmaps-gtk = %{version}-%{release}
+# A prototype that installs beside lichen: no Obsoletes, Conflicts or Provides.
 
 %description
-An independent GTK interface for the Organic Maps core, with offline maps,
-search, routing, bookmarks and map downloads for Linux phones and desktops.
-This package does not claim affiliation with or endorsement by Organic Maps.
+Lichen Preview, a prototype of the Lichen GTK interface on the CoMaps core, with
+offline maps, search, routing, bookmarks and map downloads for Linux phones and
+desktops. It keeps its data in ~/.local/share/CoMaps and ~/.config/CoMaps and
+installs beside the regular Lichen. Not a release.
+This package does not claim affiliation with or endorsement by CoMaps.
 
 %prep
-%autosetup -n Lichen-%{app_version}
+%autosetup -n LichenPreview-%{app_version}
 
 %build
-python3 tools/prepare_package_assets.py organicmaps build-icons /usr/bin/magick
+# The source archive contains the core as prepared by tools/prepare-core.sh.
+python3 tools/prepare_package_assets.py core build-icons /usr/bin/magick
 core_version="$(python3 -c 'import json; print(json.load(open("SOURCE-REVISION.json"))["core_qt_version"])')"
 core_int_version="$(python3 -c 'import json; print(json.load(open("SOURCE-REVISION.json"))["core_int_version"])')"
-cmake -S organicmaps -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+cmake -S core -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
     -DSKIP_QT_GUI=ON -DBUILD_TESTING=OFF -DOMIM_GTK_APP_DIR="$PWD/gtk-ui" \
     -DLICHEN_PREPARED_ICONS="$PWD/build-icons" -DCMAKE_INSTALL_PREFIX=/usr \
     -DLICHEN_STATIC_COMPILER_RUNTIME=OFF -DLICHEN_PHONE_GLIBC_COMPAT=OFF \
@@ -47,23 +48,25 @@ DESTDIR=%{buildroot} cmake --install build --component Lichen --prefix /usr --st
 python3 tools/prepare_rpm_metadata.py %{buildroot}
 
 %check
-desktop-file-validate %{buildroot}%{_datadir}/applications/io.github.x_vlad_x.Lichen.desktop
-test "$(%{buildroot}%{_libexecdir}/lichen/bin/lichen --version)" = "%{app_version}"
+desktop-file-validate %{buildroot}%{_datadir}/applications/io.github.x_vlad_x.Lichen.Devel.desktop
+test "$(%{buildroot}%{_libexecdir}/lichen-devel/bin/lichen --version)" = "%{app_version}"
 
 %files
 %defattr(-,root,root,-)
-%{_bindir}/lichen
-%{_bindir}/lichen-migrate-launcher
-%{_libexecdir}/lichen/
-%{_datadir}/applications/io.github.x_vlad_x.Lichen.desktop
-%{_datadir}/icons/hicolor/*/apps/io.github.x_vlad_x.Lichen.png
-%{_datadir}/icons/hicolor/scalable/apps/io.github.x_vlad_x.Lichen.svg
-%license %{_docdir}/lichen/LICENSE
-%license %{_docdir}/lichen/NOTICE
-%doc %{_docdir}/lichen/LICENSES.md
-%doc %{_docdir}/lichen/upstream/
+%{_bindir}/lichen-devel
+%{_libexecdir}/lichen-devel/
+%{_datadir}/applications/io.github.x_vlad_x.Lichen.Devel.desktop
+%{_datadir}/icons/hicolor/*/apps/io.github.x_vlad_x.Lichen.Devel.png
+%{_datadir}/icons/hicolor/scalable/apps/io.github.x_vlad_x.Lichen.Devel.svg
+%license %{_docdir}/lichen-devel/LICENSE
+%license %{_docdir}/lichen-devel/NOTICE
+%doc %{_docdir}/lichen-devel/LICENSES.md
+%doc %{_docdir}/lichen-devel/upstream/
 
 %changelog
+* Wed Oct 14 2026 Vladislav Shadiuk <6992531+x-vlad-x@users.noreply.github.com> - 0.1.0~prototype1-1
+- Prototype on the CoMaps core, packaged as lichen-devel beside lichen.
+
 * Wed Oct 14 2026 Vladislav Shadiuk <6992531+x-vlad-x@users.noreply.github.com> - 0.1.0~preview6-1
 - Rename the package from organicmaps-gtk to lichen.
 

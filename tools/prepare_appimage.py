@@ -6,6 +6,8 @@ import shutil
 import subprocess
 import sys
 
+from package_matrix import DOC
+
 
 def multiarch():
     return subprocess.check_output(["dpkg-architecture", "-qDEB_HOST_MULTIARCH"], text=True).strip()
@@ -76,7 +78,7 @@ def licenses(stage):
             raise RuntimeError(f"Bundled ELF has no Debian source provenance: {relative}")
         for package in candidates or ():
             owners.setdefault(package, []).append(relative)
-    target = stage / "usr/share/doc/lichen/bundled"
+    target = stage / DOC / "bundled"
     target.mkdir(parents=True, exist_ok=True)
     inventory = []
     metadata = []

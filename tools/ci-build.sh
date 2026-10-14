@@ -16,10 +16,10 @@ if [[ "$kind" != rpm ]]; then
   stage="out/packages/$target/root"
   inventories=()
   if [[ "$kind" == appimage ]]; then
-    stage="out/packages/$target/Lichen.AppDir"
-    inventories+=("$stage/usr/share/doc/lichen/bundled/bundled-packages.json")
+    stage="out/packages/$target/LichenPreview.AppDir"
+    inventories+=("$stage/usr/share/doc/lichen-devel/bundled/bundled-packages.json")
   fi
-  inventories+=("$stage/usr/share/doc/lichen/compiler-runtime/sources.json")
+  inventories+=("$stage/usr/share/doc/lichen-devel/compiler-runtime/sources.json")
   python3 tools/collect_debian_sources.py "${inventories[@]}" --container "$image" \
     --output "out/corresponding-sources/$target"
 fi
@@ -29,7 +29,7 @@ if [[ "$kind" == appimage ]]; then
   [[ "$arch" != arm64 ]] || machine=aarch64
   actual="$(podman run --rm --network=none --userns=keep-id -v "$PWD:/src:ro" -w /src \
     -e XDG_DATA_HOME=/tmp/test-data -e XDG_CONFIG_HOME=/tmp/test-config \
-    localhost/om-smoke "/src/out/packages/Lichen-$version-$machine.AppImage" \
+    localhost/om-smoke "/src/out/packages/LichenPreview-$version-$machine.AppImage" \
     --appimage-extract-and-run --version)"
   [[ "$actual" == "$version" ]]
 elif [[ "$kind" == rpm ]]; then
@@ -38,16 +38,16 @@ elif [[ "$kind" == rpm ]]; then
   mkdir -p "out/ci/smoke-$target"
   podman run --rm -v "$PWD:/src:ro" -v "$PWD/out/ci/smoke-$target:/artifacts:z" localhost/om-rpm-smoke sh -ec '
     dnf -y --setopt=zchunk=False --setopt=install_weak_deps=False install "$1"
-    test "$(/usr/bin/lichen --version)" = "$2"
-    rpm -V lichen
+    test "$(/usr/bin/lichen-devel --version)" = "$2"
+    rpm -V lichen-devel
     python3 /src/tools/smoke_rpm.py /artifacts
-  ' sh "/src/out/packages/lichen-$version-1.fc44.$machine.rpm" "$version"
+  ' sh "/src/out/packages/lichen-devel-$version-1.fc44.$machine.rpm" "$version"
 elif [[ "$arch" == amd64 ]]; then
   podman run --rm -v "$PWD:/src:ro" docker.io/library/debian:trixie sh -ec '
     apt-get update -qq
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "$1"
-    test "$(/usr/bin/lichen --version)" = "$2"
-    dpkg -V lichen
-  ' sh "/src/out/packages/lichen_$version-1_amd64.deb" "$version"
+    test "$(/usr/bin/lichen-devel --version)" = "$2"
+    dpkg -V lichen-devel
+  ' sh "/src/out/packages/lichen-devel_$version-1_amd64.deb" "$version"
 fi
 python3 tools/ci_release.py bundle "$target"

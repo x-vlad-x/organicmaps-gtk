@@ -13,11 +13,11 @@ import ci_release
 
 class CiReleaseTest(unittest.TestCase):
     def test_tag_must_match_supported_version(self):
-        for version in ("0.1.0", "0.1.0-preview4"):
+        for version in ("0.1.0", "0.1.0-preview4", "0.1.0-prototype1"):
             ci_release.check_version(version, f"refs/tags/v{version}")
             ci_release.check_version(version, "refs/heads/main")
         for version, ref in (("0.1.0", "refs/tags/v0.2.0"), ("../../x", ""),
-                             ("0.1.0-preview0", ""), ("0.1.0\n", "")):
+                             ("0.1.0-preview0", ""), ("0.1.0-prototype", ""), ("0.1.0\n", "")):
             with self.subTest(version=version, ref=ref), self.assertRaises(ValueError):
                 ci_release.check_version(version, ref)
 
@@ -63,6 +63,11 @@ class CiReleaseTest(unittest.TestCase):
             extracted = directory / "out/packages/app.AppImage"
             self.assertEqual(extracted.read_bytes(), b"test")
             self.assertTrue(extracted.stat().st_mode & 0o111)
+
+    def test_prototype_is_never_published(self):
+        with patch.object(ci_release, "run") as command, self.assertRaisesRegex(ValueError, "never published"):
+            ci_release.draft("0.1.0-prototype1")
+        command.assert_not_called()
 
     def test_existing_release_is_never_modified(self):
         with patch.object(ci_release, "extract"), patch.object(ci_release, "release_assets", return_value=[]), \

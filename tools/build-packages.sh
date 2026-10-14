@@ -13,38 +13,23 @@ case "$TARGET" in
   all|deb-amd64|deb-arm64|appimage-amd64|appimage-arm64|rpm-amd64|rpm-arm64) ;;
   *) echo "Usage: $0 [all|deb|rpm|appimage|FORMAT-amd64|FORMAT-arm64|phone|desktop]" >&2; exit 2 ;;
 esac
-CORE_TAG=2026.09.29-32-android
-CORE_COMMIT=b20d1417eef1e3c63a447ac8658db4307a066024
 JOBS="${LICHEN_BUILD_JOBS:-8}"
 for tool in podman git python3; do
   command -v "$tool" >/dev/null || { echo "Required tool is missing: $tool" >&2; exit 1; }
 done
 MAGICK="$(command -v magick || command -v convert || true)"
 [[ -n "$MAGICK" ]] || { echo "Required tool is missing: ImageMagick (magick or convert)" >&2; exit 1; }
-if [[ ! -d organicmaps/.git ]]; then
-  git clone --depth 1 --branch "$CORE_TAG" https://github.com/organicmaps/organicmaps.git organicmaps
-fi
-if [[ "$(git -C organicmaps rev-parse HEAD)" != "$CORE_COMMIT" ]]; then
-  echo "Expected Organic Maps $CORE_TAG ($CORE_COMMIT). Existing sources were left untouched." >&2
-  exit 1
-fi
-git -C organicmaps submodule update --init --recursive --depth 1
-for patch in "$ROOT"/patches/*.patch; do
-  if git -C organicmaps apply --reverse --check "$patch" 2>/dev/null; then
-    continue
-  fi
-  git -C organicmaps apply --check "$patch"
-  git -C organicmaps apply "$patch"
-done
+# The pinned core (tools/core.env) with its submodules, patches, world maps and generated data.
+./tools/prepare-core.sh
 mkdir -p out
-python3 tools/prepare_package_assets.py organicmaps out/package-icons "$MAGICK"
+python3 tools/prepare_package_assets.py core out/package-icons "$MAGICK"
 
 build_target() {
   local target="$1" image="$2" recipe="$3" build="$4"
   shift 4
   podman build -t "$image" -f "$recipe" build-env
   podman run --rm --network=none --userns=keep-id -v "$ROOT:/src:z" -w /src "$image" \
-    cmake -S organicmaps -B "$build" -G Ninja -DCMAKE_BUILD_TYPE=Release \
+    cmake -S core -B "$build" -G Ninja -DCMAKE_BUILD_TYPE=Release \
     -DSKIP_QT_GUI=ON -DBUILD_TESTING=OFF -DOMIM_GTK_APP_DIR=/src/gtk-ui \
     -DLICHEN_PREPARED_ICONS=/src/out/package-icons -DCMAKE_INSTALL_PREFIX=/usr "$@"
   podman run --rm --network=none --userns=keep-id -v "$ROOT:/src:z" -w /src "$image" \

@@ -581,7 +581,7 @@ void BookmarksPage::EditBookmark(MainWindow & window, kml::MarkId id)
         session.MoveBookmark(state->id, b->GetGroupId(), newGroup);
     }
     bm.SetLastEditedBmCategory(newGroup);
-    bm.SetLastEditedBmColor(data.m_color);
+    bm.SetLastEditedBmColor(data.m_color.m_predefinedColor);
 
     if (fw.HasPlacePageInfo())
     {

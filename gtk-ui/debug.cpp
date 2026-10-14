@@ -1,6 +1,6 @@
 // Remote control for testing on the phone without touching it:
-//   gdbus call --session --dest io.github.x_vlad_x.Lichen
-//     --object-path /io/github/x_vlad_x/Lichen
+//   gdbus call --session --dest io.github.x_vlad_x.Lichen.Devel
+//     --object-path /io/github/x_vlad_x/Lichen/Devel
 //     --method org.gtk.Actions.Activate debug "[<'tap 200 400'>]" "{}"
 // Commands: tap X Y | longtap X Y | drag X1 Y1 X2 Y2 | search-row N | center LAT LON ZOOM |
 //           location LAT LON [SPEED BEARING] | back | key NAME
@@ -159,7 +159,7 @@ void Run(MainWindow & w, std::string const & cmdline)
   {
     int mode = 0;
     in >> mode;
-    ApplyNightMode(static_cast<style_utils::NightMode>(mode));
+    ApplyNightMode(static_cast<NightMode>(mode));
   }
   else if (cmd == "close-dialog")
   {

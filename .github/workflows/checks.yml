@@ -22,8 +22,8 @@ jobs:
         run: python3 -m unittest discover -s tests -v
       - name: Validate metadata and scripts
         run: |
-          desktop-file-validate packaging/io.github.x_vlad_x.Lichen.desktop
-          bash -n tools/build-packages.sh tools/ci-build.sh update-lichen.sh
-          sh -n packaging/AppRun packaging/lichen packaging/lichen-migrate-launcher
+          desktop-file-validate packaging/io.github.x_vlad_x.Lichen.Devel.desktop
+          bash -n tools/build-packages.sh tools/ci-build.sh tools/prepare-core.sh update-lichen.sh
+          sh -n packaging/AppRun packaging/lichen-devel
           python3 tools/ci_release.py check
           git diff --check

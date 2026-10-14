@@ -14,7 +14,6 @@
 #include "platform/measurement_utils.hpp"
 #include "platform/platform.hpp"
 #include "platform/settings.hpp"
-#include "platform/style_utils.hpp"
 
 #include "indexer/map_style.hpp"
 
@@ -24,6 +23,7 @@ namespace
 {
 char const kZoomButtonsKey[] = "GtkZoomButtons";
 char const kKeepScreenOnKey[] = "GtkKeepScreenOn";
+char const kNightModeKey[] = "GtkNightMode";
 
 GtkWidget * SwitchRow(std::string const & title, std::string const & subtitle, bool active,
                       std::function<void(bool)> onChange)
@@ -56,40 +56,44 @@ GtkWidget * ComboRow(std::string const & title, std::vector<std::string> const &
 
 }  // namespace
 
+NightMode GetNightMode()
+{
+  // A GNOME app follows the system dark style unless the user chose otherwise.
+  int v = static_cast<int>(NightMode::System);
+  settings::TryGet(kNightModeKey, v);
+  return v >= 0 && v <= 2 ? static_cast<NightMode>(v) : NightMode::System;
+}
+
 void SyncAppColorScheme()
 {
   // The UI follows the map: dark map style -> dark Adwaita, like the Android app.
-  auto const mode = style_utils::GetNightModeSetting();
-  auto const scheme = mode == style_utils::NightMode::On    ? ADW_COLOR_SCHEME_FORCE_DARK
-                    : mode == style_utils::NightMode::Off   ? ADW_COLOR_SCHEME_FORCE_LIGHT
-                                                            : ADW_COLOR_SCHEME_DEFAULT;
+  auto const mode = GetNightMode();
+  auto const scheme = mode == NightMode::On    ? ADW_COLOR_SCHEME_FORCE_DARK
+                    : mode == NightMode::Off   ? ADW_COLOR_SCHEME_FORCE_LIGHT
+                                               : ADW_COLOR_SCHEME_DEFAULT;
   adw_style_manager_set_color_scheme(adw_style_manager_get_default(), scheme);
 }
 
-void ApplyNightMode(style_utils::NightMode mode)
+void ApplyNightMode(NightMode mode)
 {
-  style_utils::SetNightModeSetting(mode);
+  settings::Set(kNightModeKey, static_cast<int>(mode));
   SyncAppColorScheme();
-  auto & fw = GetFramework();
-  auto const current = fw.GetMapStyle();
-  bool dark = mode == style_utils::NightMode::On;
-  if (mode == style_utils::NightMode::System)
+  bool dark = mode == NightMode::On;
+  if (mode == NightMode::System)
     dark = adw_style_manager_get_dark(adw_style_manager_get_default());
-  auto const desired = dark ? GetDarkMapStyleVariant(current) : GetLightMapStyleVariant(current);
-  if (desired != current)
-    fw.SetMapStyle(desired);
+  GetFramework().SwitchToMapAppearance(dark ? MapAppearance::Dark : MapAppearance::Light);
 }
 
 namespace
 {
-void SetRoadOption(routing::RoutingOptions::Road road, bool avoid)
+void SetRoadOption(routing::RoutingOptions::Option road, bool avoid)
 {
-  auto options = routing::RoutingOptions::LoadCarOptionsFromSettings();
+  auto options = routing::RoutingOptions::LoadOptionsFromSettings(routing::VehicleType::Car);
   if (avoid)
     options.Add(road);
   else
     options.Remove(road);
-  routing::RoutingOptions::SaveCarOptionsToSettings(options);
+  routing::RoutingOptions::SaveOptionsToSettings(options);
   auto & rm = GetFramework().GetRoutingManager();
   if (rm.IsRoutingActive() && !rm.IsRoutingFollowing() && rm.GetRoutePointsCount() >= 2)
     rm.BuildRoute();
@@ -139,7 +143,7 @@ void ShowSettingsDialog(MainWindow & window)
 
   // General.
   auto * page = adw_preferences_page_new();
-  adw_preferences_page_set_title(ADW_PREFERENCES_PAGE(page), T("prefs_group_general").c_str());
+  adw_preferences_page_set_title(ADW_PREFERENCES_PAGE(page), T("prefs_group_interface").c_str());
   adw_preferences_page_set_icon_name(ADW_PREFERENCES_PAGE(page), "emblem-system-symbolic");
 
   auto * general = adw_preferences_group_new();
@@ -153,28 +157,27 @@ void ShowSettingsDialog(MainWindow & window)
     GetFramework().SetupMeasurementSystem();
   }));
 
-  auto const night = style_utils::GetNightModeSetting();
+  // The same choices as the CoMaps Android app: off, on, auto.
   adw_preferences_group_add(ADW_PREFERENCES_GROUP(general),
-                            ComboRow(T("pref_map_style_title"),
-                                     {T("pref_appearance_light"), T("pref_appearance_dark"), T("follow_system")},
-                                     static_cast<guint>(night), [](guint i)
-  { ApplyNightMode(static_cast<style_utils::NightMode>(i)); }));
+                            ComboRow(T("pref_map_style_title"), {T("off"), T("on"), T("auto")},
+                                     static_cast<guint>(GetNightMode()), [](guint i)
+  { ApplyNightMode(static_cast<NightMode>(i)); }));
 
   bool allow3d = true, allow3dBuildings = true;
-  Framework::Load3dMode(allow3d, allow3dBuildings);
+  fw.Load3dMode(allow3d, allow3dBuildings);
   adw_preferences_group_add(ADW_PREFERENCES_GROUP(general), SwitchRow(T("pref_map_3d_title"), {}, allow3d, [](bool on)
   {
     bool a = true, b = true;
-    Framework::Load3dMode(a, b);
-    Framework::Save3dMode(on, b);
+    GetFramework().Load3dMode(a, b);
+    GetFramework().Save3dMode(on, b);
     GetFramework().Allow3dMode(on, b);
   }));
   adw_preferences_group_add(ADW_PREFERENCES_GROUP(general),
                             SwitchRow(T("pref_map_3d_buildings_title"), {}, allow3dBuildings, [](bool on)
   {
     bool a = true, b = true;
-    Framework::Load3dMode(a, b);
-    Framework::Save3dMode(a, on);
+    GetFramework().Load3dMode(a, b);
+    GetFramework().Save3dMode(a, on);
     GetFramework().Allow3dMode(a, on);
   }));
   adw_preferences_group_add(ADW_PREFERENCES_GROUP(general),
@@ -183,14 +186,20 @@ void ShowSettingsDialog(MainWindow & window)
     GetFramework().AllowAutoZoom(on);
     GetFramework().SaveAutoZoom(on);
   }));
-  adw_preferences_group_add(ADW_PREFERENCES_GROUP(general),
-                            SwitchRow(T("big_font"), {}, fw.LoadLargeFontsSize(), [](bool on)
-  { GetFramework().SetLargeFontsSize(on); }));
+  {
+    // CoMaps replaced the "large font" switch with a label scale, 100-400% as in its Android app.
+    auto * row = adw_spin_row_new_with_range(100, 400, 25);
+    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(row), T("pref_font_size").c_str());
+    adw_spin_row_set_value(ADW_SPIN_ROW(row), fw.LoadFontScaleFactor() * 100);
+    Connect<void(GObject *, GParamSpec *)>(row, "notify::value", [row](GObject *, GParamSpec *)
+    { GetFramework().SetFontScaleFactor(adw_spin_row_get_value(ADW_SPIN_ROW(row)) / 100); });
+    adw_preferences_group_add(ADW_PREFERENCES_GROUP(general), row);
+  }
   adw_preferences_group_add(ADW_PREFERENCES_GROUP(general),
                             SwitchRow(T("transliteration_title"), {},
-                                      Framework::LoadTransliteration(), [](bool on)
+                                      fw.LoadTransliteration(), [](bool on)
   {
-    Framework::SaveTransliteration(on);
+    GetFramework().SaveTransliteration(on);
     GetFramework().AllowTransliteration(on);
   }));
   adw_preferences_group_add(ADW_PREFERENCES_GROUP(general),
@@ -245,9 +254,9 @@ void ShowSettingsDialog(MainWindow & window)
   adw_preferences_page_add(ADW_PREFERENCES_PAGE(navPage), ADW_PREFERENCES_GROUP(voice));
 
   auto * avoid = adw_preferences_group_new();
-  adw_preferences_group_set_title(ADW_PREFERENCES_GROUP(avoid), T("driving_options_title").c_str());
-  auto const options = routing::RoutingOptions::LoadCarOptionsFromSettings();
-  using Road = routing::RoutingOptions::Road;
+  adw_preferences_group_set_title(ADW_PREFERENCES_GROUP(avoid), T("routing_options_title").c_str());
+  auto const options = routing::RoutingOptions::LoadOptionsFromSettings(routing::VehicleType::Car);
+  using Road = routing::RoutingOptions::Option;
   struct
   {
     char const * key;
@@ -260,10 +269,7 @@ void ShowSettingsDialog(MainWindow & window)
     adw_preferences_group_add(ADW_PREFERENCES_GROUP(avoid), SwitchRow(T(r.key), {}, options.Has(road), [road](bool on)
     { SetRoadOption(road, on); }));
   }
-  adw_preferences_group_add(ADW_PREFERENCES_GROUP(avoid),
-                            SwitchRow(T("route_optimization"), T("route_optimization_description"),
-                                      routing::RoutingOptions::LoadRouteOptimizationFromSettings(),
-                                      [](bool on) { routing::RoutingOptions::SaveRouteOptimizationToSettings(on); }));
+  // CoMaps has no route optimization switch: it always reorders new intermediate stops.
   adw_preferences_page_add(ADW_PREFERENCES_PAGE(navPage), ADW_PREFERENCES_GROUP(avoid));
   adw_preferences_dialog_add(ADW_PREFERENCES_DIALOG(dialog), ADW_PREFERENCES_PAGE(navPage));
 
@@ -286,35 +292,38 @@ void ShowLayersDialog(MainWindow & window)
   gtk_flow_box_set_max_children_per_line(GTK_FLOW_BOX(flow), 5);
   SetMarginAll(flow, 12);
 
+  // CoMaps shows hiking and cycling routes, road and transit details through exclusive map modes
+  // (on Linux the walking mode is the default) and keeps outdoors and contour lines as layers.
+  struct Mode
+  {
+    MapMode mode;
+    char const * icon;
+    char const * title;
+  } const modes[] = {{MapMode::Walking, "om-layer-hiking", "mode_walking"},
+                     {MapMode::Cycling, "om-layer-cycling", "mode_cycling"},
+                     {MapMode::Driving, "om-layer-traffic", "mode_driving"},
+                     {MapMode::PublicTransport, "om-layer-subway", "mode_public-transport"}};
+  GtkToggleButton * group = nullptr;
+  for (auto const & m : modes)
+  {
+    auto const mode = m.mode;
+    auto * tile = LayerTile(m.icon, T(m.title), fw.CurrentMapMode() == mode, [mode](bool on)
+    {
+      if (on)
+        GetFramework().SwitchToMapMode(mode);
+    });
+    if (group)
+      gtk_toggle_button_set_group(GTK_TOGGLE_BUTTON(tile), group);
+    else
+      group = GTK_TOGGLE_BUTTON(tile);
+    gtk_flow_box_append(GTK_FLOW_BOX(flow), tile);
+  }
   gtk_flow_box_append(GTK_FLOW_BOX(flow), LayerTile("om-layer-outdoors", T("button_layer_outdoor"),
-                                                    Framework::LoadOutdoorsEnabled(), [](bool on)
-  {
-    Framework::SaveOutdoorsEnabled(on);
-    auto & fw = GetFramework();
-    bool const dark = MapStyleIsDark(fw.GetMapStyle());
-    MapStyle style = on ? (dark ? MapStyleOutdoorsDark : MapStyleOutdoorsLight)
-                        : (dark ? MapStyleDefaultDark : MapStyleDefaultLight);
-    fw.SetMapStyle(style);
-  }));
-  gtk_flow_box_append(GTK_FLOW_BOX(flow), LayerTile("om-layer-hiking", T("button_layer_hiking"),
-                                                    Framework::IsHikingEnabled(),
-                                                    [](bool on) { GetFramework().SetHikingEnabled(on); }));
-  gtk_flow_box_append(GTK_FLOW_BOX(flow), LayerTile("om-layer-cycling", T("button_layer_cycling"),
-                                                    Framework::IsCyclingEnabled(),
-                                                    [](bool on) { GetFramework().SetCyclingEnabled(on); }));
+                                                    fw.HasOutdoorLayer(),
+                                                    [](bool on) { GetFramework().SetOutdoorLayer(on); }));
   gtk_flow_box_append(GTK_FLOW_BOX(flow), LayerTile("om-layer-isolines", T("button_layer_isolines"),
-                                                    Framework::LoadIsolinesEnabled(), [](bool on)
-  {
-    GetFramework().GetIsolinesManager().SetEnabled(on);
-    Framework::SaveIsolinesEnabled(on);
-  }));
-  gtk_flow_box_append(GTK_FLOW_BOX(flow), LayerTile("om-layer-subway", T("button_layer_subway"),
-                                                    Framework::LoadTransitSchemeEnabled(), [](bool on)
-  {
-    GetFramework().GetTransitManager().EnableTransitSchemeMode(on);
-    Framework::SaveTransitSchemeEnabled(on);
-  }));
-  UNUSED_VALUE(fw);
+                                                    fw.HasContourLinesLayer(),
+                                                    [](bool on) { GetFramework().SetContourLinesLayer(on); }));
 
   adw_toolbar_view_set_content(ADW_TOOLBAR_VIEW(toolbar), flow);
   adw_dialog_set_child(dialog, toolbar);
@@ -324,20 +333,19 @@ void ShowLayersDialog(MainWindow & window)
 void ShowAboutDialog(MainWindow & window)
 {
   auto * about = adw_about_dialog_new();
-  adw_about_dialog_set_application_name(ADW_ABOUT_DIALOG(about), "Lichen");
+  adw_about_dialog_set_application_name(ADW_ABOUT_DIALOG(about), kAppName);
   adw_about_dialog_set_application_icon(ADW_ABOUT_DIALOG(about), kAppId);
   adw_about_dialog_set_version(ADW_ABOUT_DIALOG(about), LICHEN_VERSION);
   adw_about_dialog_set_developer_name(ADW_ABOUT_DIALOG(about), "Vladislav Shadiuk");
   adw_about_dialog_set_website(ADW_ABOUT_DIALOG(about), kProjectUrl);
-  adw_about_dialog_add_link(ADW_ABOUT_DIALOG(about), "Organic Maps Project", "https://organicmaps.app");
+  adw_about_dialog_add_link(ADW_ABOUT_DIALOG(about), "CoMaps", "https://www.comaps.app");
   adw_about_dialog_set_issue_url(ADW_ABOUT_DIALOG(about), (std::string(kProjectUrl) + "/issues").c_str());
   adw_about_dialog_set_license_type(ADW_ABOUT_DIALOG(about), GTK_LICENSE_APACHE_2_0);
   auto const dataVersion = std::to_string(GetFramework().GetCurrentDataVersion());
   adw_about_dialog_set_comments(ADW_ABOUT_DIALOG(about),
-      (std::string("An unofficial GTK interface. Not affiliated with or endorsed by Organic Maps.\n\n") +
-       "Based on the <a href=\"https://organicmaps.app\">Organic Maps Project</a>\n" +
-       "Map data © <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> and " +
-       "<a href=\"https://organicmaps.app\">Organic Maps</a>\n\n" +
+      (std::string("A prototype of an unofficial GTK interface on the CoMaps core. "
+                   "Not affiliated with or endorsed by CoMaps.\n\n") +
+       kBasedOnMarkup + "\n" + kMapDataMarkup + "\n\n" +
        "Core: " + GetPlatform().Version() + "\nMap data: " + dataVersion).c_str());
   adw_about_dialog_add_legal_section(ADW_ABOUT_DIALOG(about), "OpenStreetMap", "© OpenStreetMap contributors",
                                      GTK_LICENSE_CUSTOM, "Map data is available under the Open Database License (ODbL).");

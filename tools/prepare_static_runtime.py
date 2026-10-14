@@ -7,9 +7,11 @@ import shutil
 import subprocess
 import sys
 
+from package_matrix import DOC
+
 
 def prepare(stage, compiler):
-    target = stage / "usr/share/doc/lichen/compiler-runtime"
+    target = stage / DOC / "compiler-runtime"
     target.mkdir(parents=True, exist_ok=True)
     records = []
     for option in ("-print-file-name=libstdc++.a", "-print-libgcc-file-name"):

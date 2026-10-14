@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Prepare navigation icons from the pinned Organic Maps sources."""
+"""Prepare navigation icons from the pinned core sources and the application icons."""
 from pathlib import Path
 import shutil
 import subprocess
 import sys
 
-from vector2svg import convert
+APP_ID = "io.github.x_vlad_x.Lichen.Devel"
 
 
 def main():
@@ -14,25 +14,27 @@ def main():
     destination = Path(destination)
     destination.mkdir(parents=True, exist_ok=True)
     raster = resource / "drawable-xxxhdpi"
+    # CoMaps ships every turn icon as a raster image, including the single roundabout icon
+    # (ic_turn_round) the interface draws the exit number over.
     for pattern, old, new in (
         ("ic_turn_*.webp", "ic_turn_", "om-turn-"),
         ("ic_exit_highway_to_*.webp", "ic_exit_highway_to_", "om-exit-highway-"),
     ):
-        for icon in sorted(raster.glob(pattern)):
+        icons = sorted(raster.glob(pattern))
+        if not icons:
+            raise RuntimeError(f"No {pattern} icons in {raster}")
+        for icon in icons:
             name = icon.stem.replace(old, new, 1).replace("_", "-")
             subprocess.run([magick, str(icon), str(destination / f"{name}.png")], check=True)
-    vector = resource / "drawable"
-    for icon in sorted(vector.glob("ic_roundabout_exit_*.xml")) + [vector / "ic_turn_round.xml"]:
-        name = "om-" + icon.stem.removeprefix("ic_").replace("_", "-")
-        convert(str(icon), str(destination / f"{name}.svg"), True)
-    app_id = "io.github.x_vlad_x.Lichen"
+    if not (destination / "om-turn-round.png").is_file():
+        raise RuntimeError("The roundabout icon ic_turn_round is missing")
     packaging = Path(__file__).resolve().parents[1] / "packaging"
-    app_icon = packaging / f"{app_id}.png"
-    scalable = destination / "hicolor" / "scalable" / "apps" / f"{app_id}.svg"
+    app_icon = packaging / f"{APP_ID}.png"
+    scalable = destination / "hicolor" / "scalable" / "apps" / f"{APP_ID}.svg"
     scalable.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(packaging / f"{app_id}.svg", scalable)
+    shutil.copy2(packaging / f"{APP_ID}.svg", scalable)
     for size in (48, 64, 128, 256, 512):
-        target = destination / "hicolor" / f"{size}x{size}" / "apps" / f"{app_id}.png"
+        target = destination / "hicolor" / f"{size}x{size}" / "apps" / f"{APP_ID}.png"
         target.parent.mkdir(parents=True, exist_ok=True)
         if size == 512:
             shutil.copy2(app_icon, target)

@@ -7,7 +7,6 @@
 
 #include "platform/platform.hpp"
 #include "platform/settings.hpp"
-#include "platform/style_utils.hpp"
 
 #include "base/logging.hpp"
 
@@ -31,16 +30,11 @@ void OnStartup(GApplication *, gpointer)
 
   InitLocalization();
 
-  // A GNOME app follows the system dark style unless the user chose otherwise.
-  if (int v = 0; !settings::Get("NightMode", v))
-    style_utils::SetNightModeSetting(style_utils::NightMode::System);
-
   auto * fw = new Framework(FrameworkParams{});
   fw->SetupMeasurementSystem();
-  // Localized strings the core uses itself (same list the Android app passes).
+  // Localized strings the core takes from its strings bundle.
   for (char const * key : {"core_entrance", "core_exit", "core_my_places", "core_my_position",
-                           "core_placepage_unknown_place", "open_in_app", "postal_code", "share_my_position",
-                           "share_open_in_om_or_browser", "share_get_om"})
+                           "core_placepage_unknown_place", "postal_code"})
     fw->AddString(key, T(key));
   fw->AddString("wifi", T("category_wifi"));
   GetApp().framework = fw;
@@ -90,9 +84,15 @@ int main(int argc, char * argv[])
   int qtArgc = 1;
   char * qtArgv[] = {argv[0], nullptr};
   QCoreApplication qtApp(qtArgc, qtArgv);
-  QCoreApplication::setApplicationName("OrganicMaps");
+  // Matches the CoMaps desktop app, which keeps its settings in ~/.config/CoMaps.
+  QCoreApplication::setApplicationName("CoMaps");
 
   Platform & platform = GetPlatform();
+#ifdef LICHEN_BUNDLED_ICU
+  // On Linux the core expects ICU data in the system library, but this app links the bundled ICU
+  // statically: point it at the data file shipped with the resources (used for transliteration).
+  g_setenv("ICU_DATA", platform.ResourcesDir().c_str(), FALSE);
+#endif
   LOG(LINFO, ("Lichen", platform.Version(), "resources:", platform.ResourcesDir(),
               "writable:", platform.WritableDir()));
 

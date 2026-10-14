@@ -23,7 +23,7 @@
 
 #include "base/string_utils.hpp"
 
-#include <opening_hours/opening_hours.hpp>
+#include "3party/opening_hours/opening_hours.hpp"
 
 #include <ctime>
 
@@ -91,7 +91,7 @@ std::string FormatDays(editor::ui::OpeningDays const & days)
 // Human readable schedule, one line per timetable, or the raw OSM value when it can't be simplified.
 std::string FormatSchedule(std::string_view raw)
 {
-  osmoh::OpeningHours oh(raw);
+  osmoh::OpeningHours oh{std::string(raw)};
   editor::ui::TimeTableSet tts;
   if (!oh.IsValid() || !editor::MakeTimeTableSet(oh, tts))
     return std::string(raw);
@@ -120,7 +120,7 @@ std::string FormatSchedule(std::string_view raw)
 std::string FormatOpenStatus(std::string_view raw, bool & isOpen, bool & known)
 {
   known = false;
-  osmoh::OpeningHours oh(raw);
+  osmoh::OpeningHours oh{std::string(raw)};
   if (!oh.IsValid())
     return {};
   time_t const now = std::time(nullptr);
@@ -487,7 +487,7 @@ void PlacePage::BuildDetails()
            [this, id = info.GetBookmarkId()]() { BookmarksPage::EditBookmark(m_window, id); }, false);
   }
 
-  if (info.IsTrack() && !info.IsRelationTrack())
+  if (info.IsTrack())
   {
     if (auto const * track = fw.GetBookmarkManager().GetTrack(info.GetTrackId()))
     {
@@ -496,7 +496,7 @@ void PlacePage::BuildDetails()
       if (stats.m_duration > 0)
         summary += " • " + stats.GetFormattedDuration();
       AddRow("om-ruler-symbolic", summary, {}, {}, false);
-      if (auto const * ei = track->GetElevationInfo(); ei && !ei->IsEmpty())
+      if (auto const ei = track->GetElevationInfo(); ei && ei->GetSize() > 0)
       {
         AddRow("om-terrain-symbolic",
                "↗ " + stats.GetFormattedAscent() + "   ↘ " + stats.GetFormattedDescent() + "   " +
@@ -504,7 +504,7 @@ void PlacePage::BuildDetails()
                {}, {}, false);
         auto * chartRow = gtk_list_box_row_new();
         gtk_list_box_row_set_activatable(GTK_LIST_BOX_ROW(chartRow), FALSE);
-        auto * chart = MakeElevationChart(*ei);
+        auto * chart = MakeElevationChart(GetElevationLines(*ei));
         SetMarginAll(chart, 10);
         gtk_list_box_row_set_child(GTK_LIST_BOX_ROW(chartRow), chart);
         gtk_list_box_append(GTK_LIST_BOX(m_details), chartRow);
@@ -515,7 +515,8 @@ void PlacePage::BuildDetails()
   if (auto const oh = info.GetOpeningHours(); !oh.empty())
     AddRow("om-clock-symbolic", FormatSchedule(oh), T("editor_time_title"), {}, false);
 
-  if (auto const & address = info.GetAddress(); !address.empty())
+  // CoMaps exposes the readable address as the secondary subtitle of places that are not tracks.
+  if (auto const & address = info.GetSecondarySubtitle(); !info.IsTrack() && !address.empty())
     AddRow("om-pin-symbolic", address, T("address"));
 
   for (auto const & phoneRaw : strings::Tokenize(info.GetMetadata(MD::FMD_PHONE_NUMBER), ";"))
@@ -611,7 +612,26 @@ void PlacePage::BuildDetails()
   }
 
   // Coordinates: tap to switch the format, copy button copies the bare value.
-  auto const entries = place_page::GetAvailableCoordinateFormats(info.GetLatLon(), info.GetCountryId());
+  struct CoordinateEntry
+  {
+    std::string m_display;
+    std::string m_value;
+  };
+  std::vector<CoordinateEntry> entries;
+  using place_page::CoordinatesFormat;
+  for (auto const format : {CoordinatesFormat::LatLonDecimal, CoordinatesFormat::LatLonDMS, CoordinatesFormat::OLCFull,
+                            CoordinatesFormat::UTM, CoordinatesFormat::MGRS, CoordinatesFormat::OSMLink})
+  {
+    auto display = info.GetFormattedCoordinate(format);
+    if (display.empty() || display.ends_with("N/A"))
+      continue;
+    // The copied value leaves out the "UTM: " and "MGRS: " labels.
+    auto value = display;
+    for (std::string_view const label : {"UTM: ", "MGRS: "})
+      if (value.starts_with(label))
+        value.erase(0, label.size());
+    entries.push_back({std::move(display), std::move(value)});
+  }
   if (!entries.empty())
   {
     auto * row = adw_action_row_new();
@@ -662,7 +682,7 @@ void PlacePage::ToggleBookmark()
     kml::BookmarkData bmData;
     bmData.m_name = info.FormatNewBookmarkName();
     bmData.m_point = info.GetMercator();
-    bmData.m_color = fw.LastEditedBMColor();
+    bmData.m_color.m_predefinedColor = fw.LastEditedBMColor();
     if (info.IsFeature())
       SaveFeatureTypes(info.GetTypes(), bmData);
     auto const * bm = bmManager.GetEditSession().CreateBookmark(std::move(bmData), fw.LastEditedBMCategory());
@@ -700,7 +720,9 @@ void PlacePage::Share()
   auto & fw = GetFramework();
   if (!fw.HasPlacePageInfo())
     return;
-  auto const data = fw.GetShareData(fw.GetCurrentPlacePageInfo());
+  auto const & info = fw.GetCurrentPlacePageInfo();
+  auto const latLon = info.GetLatLon();
+  auto const data = MakeShareData(latLon.m_lat, latLon.m_lon, info.GetTitle(), info.IsMyPosition());
   CopyToClipboard(data.m_text.empty() ? data.m_url : data.m_text);
   ShowToast(TF("copied_to_clipboard", {data.m_url}));
 }

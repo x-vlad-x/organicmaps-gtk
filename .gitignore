@@ -1,5 +1,5 @@
-# Organic Maps sources, cloned by update-lichen.sh
-/organicmaps/
+# CoMaps core sources, fetched and prepared by tools/prepare-core.sh
+/core/
 # Build output
 /build-aarch64/
 /build-x86_64/

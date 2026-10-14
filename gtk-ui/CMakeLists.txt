@@ -35,13 +35,23 @@ target_compile_definitions(lichen PRIVATE
 )
 target_compile_options(lichen PRIVATE -Wno-missing-field-initializers -Wno-unused-parameter)
 target_link_libraries(lichen PRIVATE map PkgConfig::GTK_APP_DEPS)
-# The core links its own static FreeType and HarfBuzz: don't export them, or they override the system
-# ones Pango/cairo use (this build of FreeType has no PNG support, so color emoji disappear).
+# The core links its own static ICU, FreeType and HarfBuzz: don't export them, or they override the
+# system ones Pango/cairo use (this build of FreeType has no PNG support, so color emoji disappear).
 option(LICHEN_STATIC_COMPILER_RUNTIME "Link the compiler runtime statically" ON)
 if (LICHEN_STATIC_COMPILER_RUNTIME)
   target_link_options(lichen PRIVATE -static-libstdc++ -static-libgcc)
 endif()
 target_link_options(lichen PRIVATE -Wl,--exclude-libs,ALL)
+# The core patch links the bundled ICU. It keeps its data stub in icui18n but uses it from icuuc,
+# which follows on the link line, and GNU ld scans each static library once: request it up front.
+if (TARGET icuuc)
+  file(STRINGS "${CMAKE_SOURCE_DIR}/3party/icu/icu/icu4c/source/common/unicode/uvernum.h" _icu_major
+    REGEX "^#define U_ICU_VERSION_MAJOR_NUM [0-9]+")
+  string(REGEX MATCH "[0-9]+$" _icu_major "${_icu_major}")
+  target_link_options(lichen PRIVATE "-Wl,--undefined=icudt${_icu_major}_dat")
+  # The app points ICU at the data file shipped with the core resources.
+  target_compile_definitions(lichen PRIVATE LICHEN_BUNDLED_ICU)
+endif()
 
 # Preserve the pinned core's version when rebuilding an RPM source archive without Git.
 set(LICHEN_CORE_QT_VERSION "" CACHE STRING "Core version recorded by the source archive")

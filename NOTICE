@@ -1,20 +1,21 @@
-Lichen — an unofficial interface for Organic Maps
+Lichen Preview — a prototype of the Lichen interface on the CoMaps core
 Copyright 2026 Vladislav Shadiuk
 
 Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-This is an unofficial interface for Organic Maps and is not affiliated with or endorsed by
-the Organic Maps project or Organic Maps OÜ.
+This is an unofficial interface and is not affiliated with or endorsed by CoMaps or the
+CoMaps contributors.
 
-It is built on the Organic Maps Project (https://organicmaps.app):
+It is built on CoMaps (https://www.comaps.app), whose NOTICE reads:
   Copyright 2020 My.com B.V. (Mail.Ru Group)
-  Copyright 2020-2026 Organic Maps Contributors
+  Copyright 2025 Organic Maps Contributors
+  Copyright 2026 CoMaps Contributors
   Licensed under the Apache License, Version 2.0.
-The Organic Maps sources are not part of this repository; the build script downloads them from
-https://github.com/organicmaps/organicmaps. The icons in gtk-ui/icons/
-(converted from the Organic Maps Android app with tools/vector2svg.py) and the UI translations
-(data/strings) come from the Organic Maps Project. The Lichen application icon
-(packaging/io.github.x_vlad_x.Lichen.svg) is original to this project.
-Until 0.1.0-preview5 this project was published as "Organic Maps (GTK)".
+The CoMaps sources are not part of this repository; the build script downloads them from
+https://codeberg.org/comaps/comaps at the commit pinned in tools/core.env. The UI
+translations (Android string resources) and the turn icons come from CoMaps. The icons in
+gtk-ui/icons/ were converted from the Organic Maps Android app with tools/vector2svg.py and
+are covered by the same copyrights. The Lichen application icon
+(packaging/io.github.x_vlad_x.Lichen.Devel.svg) is original to this project.
 
 Map data © OpenStreetMap contributors, available under the Open Database License (ODbL).

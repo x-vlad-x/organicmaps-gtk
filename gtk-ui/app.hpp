@@ -10,9 +10,15 @@ class Framework;
 
 namespace lichen
 {
-// Application ID: D-Bus name, desktop file and icon name.
-inline constexpr char kAppId[] = "io.github.x_vlad_x.Lichen";
+// Application ID: D-Bus name, desktop file and icon name. The CoMaps prototype uses its own ID
+// and name, so it installs and runs beside the regular Lichen.
+inline constexpr char kAppId[] = "io.github.x_vlad_x.Lichen.Devel";
+inline constexpr char kAppName[] = "Lichen Preview";
 inline constexpr char kProjectUrl[] = "https://github.com/x-vlad-x/lichen";
+// Attribution shown on the map, in the main menu and in About (Pango markup).
+inline constexpr char kBasedOnMarkup[] = "Based on <a href=\"https://www.comaps.app\">CoMaps</a>";
+inline constexpr char kMapDataMarkup[] =
+    "Map data © <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap contributors</a>";
 
 class MapView;
 class MainWindow;
@@ -40,6 +46,14 @@ void ShowToast(std::string const & text);
 void OpenUri(std::string const & uri);
 void CopyToClipboard(std::string const & text);
 std::string Trim(std::string s);
+
+// A link and a message for sharing a location, built the way the CoMaps Android app does.
+struct ShareData
+{
+  std::string m_url;
+  std::string m_text;
+};
+ShareData MakeShareData(double lat, double lon, std::string const & name, bool myPosition);
 
 // Connects a lambda to a GObject signal with no extra arguments besides the instance.
 template <typename Fn>

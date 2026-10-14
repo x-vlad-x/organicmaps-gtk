@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Builds Lichen, a native GNOME interface for Organic Maps (GTK4 + libadwaita) for aarch64 Linux phones
-# (tested on the FuriLabs FLX1s with FuriOS) and installs it over SSH.
+# Builds Lichen Preview, the prototype of the Lichen GTK interface (GTK4 + libadwaita) on the CoMaps
+# core, for aarch64 Linux phones (tested on the FuriLabs FLX1s with FuriOS) and installs it over SSH
+# beside the regular Lichen, which it never touches.
 #
-#   ./update-lichen.sh                 build the latest release, install it if the phone has an older one
+#   ./update-lichen.sh                 build the pinned core, install it if the phone has an older build
 #   ./update-lichen.sh --force         rebuild and reinstall even if the version is the same
-#   ./update-lichen.sh --tag <tag>     build a specific tag (e.g. 2026.09.29-32-android)
 #   ./update-lichen.sh --build-only    only build, don't install on the phone
 #   ./update-lichen.sh --ui-only       quickly rebuild and update only the program on the phone
 #                                               (without the world map data and the voice engine)
@@ -14,39 +14,38 @@
 #
 #   PHONE=user@host ./update-lichen.sh  SSH destination (default: "furios", e.g. from ~/.ssh/config)
 #
-# How it works: the Organic Maps core (C++: map rendering, search, routing, map downloads) comes from
-# the official repository unchanged, except for a small build patch (patches/). The interface is our
-# own, built on GTK4/libadwaita (gtk-ui/), and follows the Android app: full-screen map, bottom menu,
-# place page sheet, route planning and turn-by-turn navigation, search, map downloader, bookmarks and
-# tracks, settings. UI strings come from the same translations as the Android/iOS apps.
-# The build cross-compiles for aarch64 in a Debian testing container (same base as FuriOS 14) with podman.
-# On the phone the program lives in ~/.local/share/lichen; maps and bookmarks in
-# ~/.local/share/OrganicMaps, settings in ~/.config/OrganicMaps.
+# How it works: the CoMaps core (C++: map rendering, search, routing, map downloads) comes from the
+# CoMaps repository at the commit pinned in tools/core.env, unchanged except for a small build patch
+# (patches/). The interface is our own, built on GTK4/libadwaita (gtk-ui/), and follows the Android
+# app: full-screen map, bottom menu, place page sheet, route planning and turn-by-turn navigation,
+# search, map downloader, bookmarks and tracks, settings. UI strings come from the CoMaps Android
+# translations. The build cross-compiles for aarch64 in a Debian testing container (same base as
+# FuriOS 14) with podman.
+# On the phone the program lives in ~/.local/share/lichen-devel; maps in ~/.local/share/CoMaps,
+# settings and bookmarks in ~/.config/CoMaps.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SRC_DIR="$SCRIPT_DIR/organicmaps"
+# shellcheck source=tools/core.env
+source "$SCRIPT_DIR/tools/core.env"
+SRC_DIR="$SCRIPT_DIR/core"
 BUILD_DIR="$SCRIPT_DIR/build-aarch64"
 OUT_DIR="$SCRIPT_DIR/out"
 PHONE="${PHONE:-furios}"                       # SSH host, e.g. from ~/.ssh/config
-REMOTE_DIR=".local/share/lichen"      # relative to $HOME on the phone
-REMOTE_MAPS=".local/share/OrganicMaps"
-REMOTE_CONFIG=".config/OrganicMaps"
-REPO_URL="https://github.com/organicmaps/organicmaps.git"
+REMOTE_DIR=".local/share/lichen-devel"         # relative to $HOME on the phone
+REMOTE_MAPS=".local/share/CoMaps"
+REMOTE_CONFIG=".config/CoMaps"
 IMAGE="localhost/om-cross"
-APP_ID="io.github.x_vlad_x.Lichen"
-# Launchers and install directory of earlier builds, removed on install.
-OLD_APP_IDS="app.organicmaps.gtk io.github.x_vlad_x.OrganicMapsGtk"
-OLD_REMOTE_DIR=".local/share/organicmaps-gtk"
+APP_ID="io.github.x_vlad_x.Lichen.Devel"
+LAUNCHER="lichen-devel"
 TTS_PACKAGES="espeak-ng libespeak-ng1 espeak-ng-data libpcaudio0 libsonic0"
 
-FORCE=0; BUILD_ONLY=0; TAG=""; CHECK=0; UNINSTALL=0; PURGE=0; UI_ONLY=0
+FORCE=0; BUILD_ONLY=0; CHECK=0; UNINSTALL=0; PURGE=0; UI_ONLY=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --force) FORCE=1 ;;
     --build-only) BUILD_ONLY=1 ;;
-    --tag) TAG="$2"; shift ;;
     --ui-only) UI_ONLY=1 ;;
     --check) CHECK=1 ;;
     --uninstall) UNINSTALL=1 ;;
@@ -66,11 +65,10 @@ ui_rev() { cat "$SCRIPT_DIR"/gtk-ui/*.cpp "$SCRIPT_DIR"/gtk-ui/*.hpp "$SCRIPT_DI
 
 # --- uninstall ---------------------------------------------------------------
 if [[ $UNINSTALL -eq 1 ]]; then
-  [[ $PURGE -eq 1 ]] && log "Removing Lichen from the phone, including maps and bookmarks" \
-                     || log "Removing Lichen from the phone (maps, bookmarks and settings are kept)"
-  rsh "pkill -f '[b]in/(lichen|organicmaps-gtk)' ; true"
-  cmd="rm -rf $REMOTE_DIR $OLD_REMOTE_DIR .local/share/applications/$APP_ID.desktop;"
-  for id in $OLD_APP_IDS; do cmd+="rm -f .local/share/applications/$id.desktop;"; done
+  [[ $PURGE -eq 1 ]] && log "Removing Lichen Preview from the phone, including its maps and bookmarks" \
+                     || log "Removing Lichen Preview from the phone (maps, bookmarks and settings are kept)"
+  rsh "pkill -f '[l]ichen-devel/bin/lichen' ; true"
+  cmd="rm -rf $REMOTE_DIR .local/share/applications/$APP_ID.desktop;"
   [[ $PURGE -eq 1 ]] && cmd+="rm -rf $REMOTE_MAPS $REMOTE_CONFIG;"
   cmd+="update-desktop-database .local/share/applications 2>/dev/null; true"
   rsh "$cmd"
@@ -80,13 +78,9 @@ if [[ $UNINSTALL -eq 1 ]]; then
 fi
 
 # --- which version ----------------------------------------------------------
-if [[ -z "$TAG" ]]; then
-  TAG=$(git ls-remote --tags --refs "$REPO_URL" '*-android' 2>/dev/null | awk -F/ '{print $3}' | sort -V | tail -1)
-fi
-[[ -n "$TAG" ]] || die "could not find the latest Organic Maps release"
-VERSION="${TAG%-android}"
+VERSION="comaps.${CORE_COMMIT:0:8}"
 FULL_VERSION="$VERSION+gtk.$(ui_rev)"
-log "Organic Maps: $VERSION, interface: $(ui_rev)"
+log "$CORE_NAME: ${CORE_COMMIT:0:8}, interface: $(ui_rev)"
 
 INSTALLED=""
 if [[ $BUILD_ONLY -eq 0 ]]; then
@@ -108,27 +102,8 @@ command -v podman >/dev/null || die "podman is required"
 command -v magick >/dev/null || die "ImageMagick (magick) is required for the turn icons"
 
 # --- sources -----------------------------------------------------------------
-if [[ ! -d "$SRC_DIR/.git" ]]; then
-  log "Cloning Organic Maps $TAG"
-  git clone --depth 1 --branch "$TAG" "$REPO_URL" "$SRC_DIR"
-fi
-CURRENT=$(git -C "$SRC_DIR" describe --tags --exact-match 2>/dev/null || true)
-if [[ "$CURRENT" != "$TAG" ]]; then
-  log "Switching the sources to $TAG"
-  git -C "$SRC_DIR" checkout -- .
-  git -C "$SRC_DIR" fetch --depth 1 origin tag "$TAG"
-  git -C "$SRC_DIR" checkout -q "$TAG"
-  rm -rf "$BUILD_DIR"
-fi
-log "Submodules"
-git -C "$SRC_DIR" submodule update --init --recursive --depth 1 >/dev/null
-
-log "Patches"
-git -C "$SRC_DIR" checkout -- CMakeLists.txt libs/platform/CMakeLists.txt
-for p in "$SCRIPT_DIR"/patches/*.patch; do
-  echo "  $(basename "$p")"
-  git -C "$SRC_DIR" apply "$p" || die "patch $(basename "$p") does not apply, regenerate it for the new version"
-done
+log "Preparing $CORE_NAME ${CORE_COMMIT:0:8}: submodules, patches, world maps, generated data"
+"$SCRIPT_DIR/tools/prepare-core.sh"
 
 # --- build container ---------------------------------------------------------
 if ! podman image exists "$IMAGE"; then
@@ -139,7 +114,7 @@ fi
 # --- build -------------------------------------------------------------------
 python3 "$SCRIPT_DIR/tools/prepare_package_assets.py" "$SRC_DIR" "$OUT_DIR/package-icons" "$(command -v magick)"
 log "Building (aarch64)"
-in_container cmake -S organicmaps -B build-aarch64 -G Ninja -DCMAKE_BUILD_TYPE=Release \
+in_container cmake -S core -B build-aarch64 -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_TOOLCHAIN_FILE=/src/build-env/aarch64-toolchain.cmake -DSKIP_QT_GUI=ON -DSKIP_TESTS=ON \
   -DBUILD_TESTING=OFF -DOMIM_GTK_APP_DIR=/src/gtk-ui -DLICHEN_PREPARED_ICONS=/src/out/package-icons >/dev/null
 in_container ninja -C build-aarch64 -j"$(nproc)" lichen
@@ -148,21 +123,27 @@ NEED_GLIBC=$(in_container aarch64-linux-gnu-objdump -T build-aarch64/lichen | gr
 echo "  requires $NEED_GLIBC"
 
 # --- package -----------------------------------------------------------------
-DIST="$OUT_DIR/lichen-$VERSION"
+DIST="$OUT_DIR/lichen-devel-$VERSION"
 log "Packaging: $DIST"
 rm -rf "$DIST"
 mkdir -p "$DIST/bin" "$DIST/icons"
 cp "$BUILD_DIR/lichen.stripped" "$DIST/bin/lichen"
-cp "$SCRIPT_DIR/packaging/lichen" "$SCRIPT_DIR/packaging/$APP_ID.desktop" \
+cp "$SCRIPT_DIR/packaging/$LAUNCHER" "$SCRIPT_DIR/packaging/$APP_ID.desktop" \
    "$SCRIPT_DIR/packaging/$APP_ID.png" "$DIST/"
 
-# Core data (styles, fonts, symbols, World.mwm, translations). Country maps are downloaded in the app.
+# Core data (styles, fonts, symbols, World.mwm). Country maps are downloaded in the app.
 rsync -a --delete \
   --exclude borders --exclude test_data --exclude styles --exclude symbols-svg --exclude generator \
-  --exclude vulkan_shaders --exclude 'minsk-pass*' --exclude 'drules_*.txt' --exclude drules_design.bin \
-  --exclude 'drules_merged.*' --exclude 'mapcss-*' --exclude taginfo.json --exclude '*.csv' \
-  --exclude '*.md' --exclude config.xsd \
+  --exclude vulkan_shaders --exclude translations --exclude world_mwm --exclude 'minsk-pass*' \
+  --exclude 'drules_*.txt' --exclude drules_design.bin --exclude 'drules_merged.*' --exclude mapcss-dynamic.txt \
+  --exclude taginfo.json --exclude '*.diff' --exclude '*_hash' --exclude '*.prev' --exclude borders_vs_osm.csv \
+  --exclude countries_synonyms.csv --exclude old_vs_new.csv --exclude '*.md' --exclude config.xsd \
   "$SRC_DIR/data/" "$DIST/data/"
+# UI translations from the CoMaps Android resources.
+for part in app sdk; do
+  (cd "$SRC_DIR/android/$part/src/main/res" && find . -path './values*' \( -name strings.xml -o -name types_strings.xml \) \
+     -exec install -D -m 644 {} "$DIST/strings/$part/{}" \;)
+done
 
 # Icons: our symbolic SVGs plus the turn and junction icons from the Android app.
 cp "$SCRIPT_DIR"/gtk-ui/icons/*.svg "$DIST/icons/"
@@ -175,22 +156,20 @@ echo "Done: $DIST ($(du -sh "$DIST" | cut -f1))"
 [[ $BUILD_ONLY -eq 1 ]] && exit 0
 
 # --- install -----------------------------------------------------------------
-log "Closing Lichen on the phone"
-rsh "pkill -f '[b]in/(lichen|organicmaps-gtk)' ; true"
+log "Closing Lichen Preview on the phone"
+rsh "pkill -f '[l]ichen-devel/bin/lichen' ; true"
 
 install_desktop_entry() {
   rsh "set -e; mkdir -p .local/share/applications
-       sed -e \"s|^Exec=.*|Exec=\$HOME/$REMOTE_DIR/lichen %U|\" \\
+       sed -e \"s|^Exec=.*|Exec=\$HOME/$REMOTE_DIR/$LAUNCHER %U|\" \\
            -e \"s|^Icon=.*|Icon=\$HOME/$REMOTE_DIR/$APP_ID.png|\" \\
            $REMOTE_DIR/$APP_ID.desktop > .local/share/applications/$APP_ID.desktop
-       for id in $OLD_APP_IDS; do rm -f .local/share/applications/\$id.desktop; done
-       rm -rf $OLD_REMOTE_DIR
        update-desktop-database .local/share/applications 2>/dev/null || true"
 }
 
 if [[ $UI_ONLY -eq 1 ]] && rsh "test -d $REMOTE_DIR/data"; then
   log "Updating the program and icons on the phone"
-  tar -C "$DIST" -cf - bin icons lichen "$APP_ID.desktop" "$APP_ID.png" VERSION \
+  tar -C "$DIST" -cf - bin icons strings "$LAUNCHER" "$APP_ID.desktop" "$APP_ID.png" VERSION \
     | gzip -1 | rsh "mkdir -p $REMOTE_DIR && tar -C $REMOTE_DIR -xzf -"
   install_desktop_entry
   log "Done: $FULL_VERSION (restart the app)"
@@ -212,6 +191,6 @@ rsh "set -e; rm -rf $REMOTE_DIR.old; [ -d $REMOTE_DIR ] && mv $REMOTE_DIR $REMOT
 install_desktop_entry
 
 log "Checking that the program starts on the phone"
-rsh "cd $REMOTE_DIR && ./bin/lichen --help >/dev/null 2>&1 && echo '  ok' || echo '  does NOT start, check: ~/$REMOTE_DIR/lichen' >&2"
+rsh "cd $REMOTE_DIR && ./bin/lichen --help >/dev/null 2>&1 && echo '  ok' || echo '  does NOT start, check: ~/$REMOTE_DIR/$LAUNCHER' >&2"
 
-log "Installed: $FULL_VERSION, look for \"Lichen\" in the app list"
+log "Installed: $FULL_VERSION, look for \"Lichen Preview\" in the app list"

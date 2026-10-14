@@ -9,112 +9,180 @@
 
 #include <glib.h>
 
+#include <algorithm>
 #include <cctype>
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <fstream>
 #include <mutex>
+#include <string_view>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 namespace lichen
 {
 namespace
 {
 std::unordered_map<std::string, std::string> g_strings;
-// Twine aliases: "ref = other.key" (e.g. type.place.city.capital.2 -> type.place.city.capital).
-std::unordered_map<std::string, std::string> g_refs;
 std::string g_language = "en";
 std::once_flag g_initOnce;
 
-std::string Unescape(std::string_view v)
+// English text for keys the CoMaps Android resources lack. The interface took these from the
+// Organic Maps string set (shared with iOS), so they stay untranslated here.
+// TODO: replace them with CoMaps keys or contribute the strings to CoMaps.
+std::unordered_map<std::string, std::string> const kEnglishFallback = {
+    {"cancel_download", "Cancel Download"},
+    {"downloader_available_maps", "Available"},
+    {"downloader_search_results", "Found"},
+    {"downloader_status_outdated", "Update"},
+    {"mode_cycling", "Cycling"},
+    {"mode_driving", "Driving"},
+    {"mode_public-transport", "Public Transport"},
+    {"mode_walking", "Walking"},
+    {"opens_dayoftheweek_at", "Opens %1$@ at %2$@"},
+    {"phone", "Phone"},
+    {"placepage_bookmark_name_hint", "Place Name"},
+    {"placepage_delete_bookmark_button", "Delete Place"},
+    {"route", "Route"},
+    {"routing_arrive", "Arrival at %@"},
+    {"routing_planning_error", "Route Planning Failed"},
+    {"then_turn", "Then"},
+    {"track_recording_stop_and_save", "Save the recorded track"},
+};
+
+// Android string resource escapes: \n, \t, \', \", \\, \uXXXX; an unescaped double quote only
+// marks a quoted part of the string.
+std::string UnescapeAndroid(std::string_view v)
 {
   std::string out;
   out.reserve(v.size());
   for (size_t i = 0; i < v.size(); ++i)
   {
-    if (v[i] == '\\' && i + 1 < v.size())
+    char const c = v[i];
+    if (c == '"')
+      continue;
+    if (c != '\\' || i + 1 == v.size())
     {
-      char const n = v[++i];
-      if (n == 'n')
-        out += '\n';
-      else if (n == 't')
-        out += '\t';
-      else
-        out += n;
+      out += c;
+      continue;
+    }
+    char const n = v[++i];
+    if (n == 'n')
+      out += '\n';
+    else if (n == 't')
+      out += '\t';
+    else if (n == 'u' && i + 4 < v.size())
+    {
+      char hex[5] = {v[i + 1], v[i + 2], v[i + 3], v[i + 4], 0};
+      char utf8[6] = {0};
+      g_unichar_to_utf8(static_cast<gunichar>(std::strtoul(hex, nullptr, 16)), utf8);
+      out += utf8;
+      i += 4;
     }
     else
-      out += v[i];
+      out += n;
   }
   return out;
 }
 
-std::string_view Trim(std::string_view s)
+// Reads <string name="key">value</string> entries of an Android resource file. Text of nested
+// elements (<xliff:g>) belongs to the value.
+void LoadAndroidXml(std::string const & path)
 {
-  while (!s.empty() && (s.front() == ' ' || s.front() == '\t' || s.front() == '\r'))
-    s.remove_prefix(1);
-  while (!s.empty() && (s.back() == ' ' || s.back() == '\t' || s.back() == '\r'))
-    s.remove_suffix(1);
-  return s;
-}
-
-// Twine format: "[key]" starts a section, "lang = value" lines follow.
-void LoadTwine(std::string const & path, std::vector<std::string> const & langs)
-{
-  std::ifstream in(path);
-  if (!in)
-  {
-    LOG(LWARNING, ("Can't open strings file", path));
+  gchar * content = nullptr;
+  gsize length = 0;
+  if (!g_file_get_contents(path.c_str(), &content, &length, nullptr))
     return;
-  }
 
-  std::string line, key;
-  // Index of the best language found for the current key (lower is better).
-  size_t bestRank = langs.size();
-  std::string best;
-  auto const flush = [&]()
+  struct State
   {
-    if (!key.empty() && !best.empty())
-      g_strings[key] = std::move(best);
-    best.clear();
-    bestRank = langs.size();
+    std::string key;
+    std::string value;
+    int depth = 0;
+  } state;
+  GMarkupParser parser = {};
+  parser.start_element = [](GMarkupParseContext *, gchar const * element, gchar const ** names,
+                            gchar const ** values, gpointer data, GError **)
+  {
+    auto & s = *static_cast<State *>(data);
+    if (s.depth > 0)
+    {
+      ++s.depth;
+      return;
+    }
+    if (std::strcmp(element, "string") != 0)
+      return;
+    for (int i = 0; names[i]; ++i)
+      if (std::strcmp(names[i], "name") == 0)
+        s.key = values[i];
+    s.value.clear();
+    s.depth = 1;
+  };
+  parser.end_element = [](GMarkupParseContext *, gchar const *, gpointer data, GError **)
+  {
+    auto & s = *static_cast<State *>(data);
+    if (s.depth == 0 || --s.depth > 0)
+      return;
+    auto value = UnescapeAndroid(s.value);
+    if (!s.key.empty() && !value.empty())
+      g_strings[s.key] = std::move(value);
+    s.key.clear();
+  };
+  parser.text = [](GMarkupParseContext *, gchar const * text, gsize size, gpointer data, GError **)
+  {
+    auto & s = *static_cast<State *>(data);
+    if (s.depth > 0)
+      s.value.append(text, size);
   };
 
-  while (std::getline(in, line))
+  auto * context = g_markup_parse_context_new(&parser, GMarkupParseFlags(0), &state, nullptr);
+  GError * error = nullptr;
+  if (!g_markup_parse_context_parse(context, content, static_cast<gssize>(length), &error) ||
+      !g_markup_parse_context_end_parse(context, &error))
   {
-    std::string_view l = Trim(line);
-    if (l.empty())
-      continue;
-    if (l.front() == '[')
-    {
-      flush();
-      if (l.size() > 2 && l[1] == '[')
-        key.clear();  // [[Section]]
-      else
-        key = std::string(l.substr(1, l.find(']') - 1));
-      continue;
-    }
-    if (key.empty())
-      continue;
-    auto const eq = l.find('=');
-    if (eq == std::string_view::npos)
-      continue;
-    auto const lang = Trim(l.substr(0, eq));
-    if (lang == "ref")
-    {
-      g_refs[key] = std::string(Trim(l.substr(eq + 1)));
-      continue;
-    }
-    for (size_t i = 0; i < bestRank; ++i)
-    {
-      if (lang == langs[i])
-      {
-        best = Unescape(Trim(l.substr(eq + 1)));
-        bestRank = i;
-        break;
-      }
-    }
+    LOG(LWARNING, ("Can't parse strings file", path, error ? error->message : ""));
+    g_clear_error(&error);
   }
-  flush();
+  g_markup_parse_context_free(context);
+  g_free(content);
+}
+
+// Android resource folders for the user's language, from the most to the least specific:
+// "pt_BR.UTF-8" -> values-pt-rBR, values-pt; "sr_RS@latin" -> values-b+sr+Latn, values-sr;
+// Traditional Chinese -> values-zh-rTW (also rHK, rMO); Simplified Chinese -> values-zh.
+std::vector<std::string> ResourceFolders(std::string locale, std::string const & twine)
+{
+  bool const latin = locale.find("@latin") != std::string::npos;
+  locale = locale.substr(0, locale.find_first_of(".@"));
+  std::replace(locale.begin(), locale.end(), '_', '-');
+  std::string language = locale.substr(0, locale.find('-'));
+  // Android keeps the legacy codes of these languages.
+  if (language == "he")
+    language = "iw";
+  else if (language == "id")
+    language = "in";
+  else if (language == "yi")
+    language = "ji";
+  std::string const region = locale.find('-') == std::string::npos ? "" : locale.substr(locale.rfind('-') + 1);
+
+  std::vector<std::string> folders;
+  if (twine == "zh-Hant")
+  {
+    if (region == "HK" || region == "MO")
+      folders.push_back("values-zh-r" + region);
+    for (char const * r : {"TW", "HK", "MO"})
+      folders.push_back(std::string("values-zh-r") + r);
+    return folders;
+  }
+  if (latin)
+    folders.push_back("values-b+" + language + "+Latn");
+  if (region.size() == 2 && std::isupper(static_cast<unsigned char>(region[0])))
+    folders.push_back("values-" + language + "-r" + region);
+  else if (region.size() == 3 && std::isdigit(static_cast<unsigned char>(region[0])))
+    folders.push_back("values-b+" + language + "+" + region);
+  folders.push_back("values-" + language);
+  return folders;
 }
 }  // namespace
 
@@ -127,34 +195,31 @@ void InitLocalization()
       lang = "en";
     g_language = lang;
 
-    std::vector<std::string> langs{lang};
-    if (auto const dash = lang.find('-'); dash != std::string::npos)
-      langs.push_back(lang.substr(0, dash));
-    if (lang != "en")
-      langs.push_back("en");
+    // CoMaps keeps the UI translations in its Android resources: the app strings, the core
+    // strings and the feature type names. Load the English defaults first and let each more
+    // specific language folder override them.
+    auto folders = ResourceFolders(languages::GetCurrentOrig(), lang);
+    folders.push_back("values-en");
+    folders.push_back("values");
+    auto const dir = base::JoinPath(GetPlatform().ResourcesDir(), "..", "strings");
+    for (auto it = folders.rbegin(); it != folders.rend(); ++it)
+      for (char const * part : {"sdk", "app"})
+        for (char const * file : {"strings.xml", "types_strings.xml"})
+          LoadAndroidXml(base::JoinPath(dir, part, *it, file));
+    if (g_strings.empty())
+      LOG(LWARNING, ("No UI strings found in", dir));
 
-    auto const dir = base::JoinPath(GetPlatform().ResourcesDir(), "strings");
-    LoadTwine(base::JoinPath(dir, "strings.txt"), langs);
-    LoadTwine(base::JoinPath(dir, "types_strings.txt"), langs);
-    for (auto const & [key, target] : g_refs)
+    // "@string/other_key" values refer to another string.
+    for (auto & [key, value] : g_strings)
     {
-      if (g_strings.count(key))
-        continue;
-      std::string t = target;
-      for (int depth = 0; depth < 5; ++depth)
+      for (int depth = 0; depth < 5 && value.starts_with("@string/"); ++depth)
       {
-        if (auto const it = g_strings.find(t); it != g_strings.end())
-        {
-          g_strings[key] = it->second;
+        auto const it = g_strings.find(value.substr(8));
+        if (it == g_strings.end())
           break;
-        }
-        auto const r = g_refs.find(t);
-        if (r == g_refs.end())
-          break;
-        t = r->second;
+        value = it->second;
       }
     }
-    g_refs.clear();
     LOG(LINFO, ("Loaded", g_strings.size(), "UI strings for", lang));
   });
 }
@@ -168,6 +233,8 @@ std::string const & CurrentLanguage()
 // A string the phone apps take from the OS (Android/iOS system resources): use GTK's translation.
 std::string const * Fallback(std::string const & key)
 {
+  if (auto const it = kEnglishFallback.find(key); it != kEnglishFallback.end())
+    return &it->second;
   if (key != "copy")
     return nullptr;
   static std::string const copy = []
@@ -187,6 +254,12 @@ std::string T(std::string const & key)
     return it->second;
   if (auto const * f = Fallback(key))
     return *f;
+  // Report each missing interface key once, so untranslated labels are easy to find (feature
+  // types without a name are common and not reported).
+  static std::mutex mutex;
+  static std::unordered_set<std::string> reported;
+  if (std::lock_guard lock(mutex); !key.starts_with("type.") && reported.insert(key).second)
+    LOG(LWARNING, ("Missing UI string:", key));
   return key;
 }
 

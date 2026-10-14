@@ -10,13 +10,11 @@ import subprocess
 import tarfile
 
 from prepare_release import digest
-from package_matrix import TARGETS, ARCHITECTURES, stage_path, package_name, srpm_name, validate_elf
+from package_matrix import (APP_ID, ARCHITECTURES, DOC, PACKAGE, PRIVATE, TARGETS, debian_version,
+                            package_name, srpm_name, stage_path, validate_elf)
 
 ROOT = Path(__file__).resolve().parents[1]
 STAGES = {target: stage_path(target) for target in TARGETS}
-
-PRIVATE = Path("usr/libexec/lichen")
-DOC = Path("usr/share/doc/lichen")
 
 
 def run(*args):
@@ -24,7 +22,8 @@ def run(*args):
 
 
 def check_version(version, ref):
-    if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:-preview[1-9][0-9]*)?", version):
+    # Prototype versions identify test builds of a branch; they are never published.
+    if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:-(?:preview|prototype)[1-9][0-9]*)?", version):
         raise ValueError(f"Unsupported release version: {version}")
     if ref.startswith("refs/tags/") and ref != f"refs/tags/v{version}":
         raise ValueError(f"Tag {ref} does not match VERSION {version}")
@@ -61,24 +60,27 @@ def bundle(target):
     metadata = [stage / PRIVATE / "build-info.json"]
     if kind != "rpm":
         metadata.append(stage / DOC / "compiler-runtime/sources.json")
-    desktop = ROOT / stage / "usr/share/applications/io.github.x_vlad_x.Lichen.desktop"
+    desktop = ROOT / stage / f"usr/share/applications/{APP_ID}.desktop"
     run("desktop-file-validate", str(desktop))
     for size in (48, 64, 128, 256, 512):
-        icon = ROOT / stage / f"usr/share/icons/hicolor/{size}x{size}/apps/io.github.x_vlad_x.Lichen.png"
+        icon = ROOT / stage / f"usr/share/icons/hicolor/{size}x{size}/apps/{APP_ID}.png"
         if not icon.is_file():
             raise ValueError(f"Missing installed icon: {icon}")
     package = Path("out/packages") / package_name(target, version)
     if kind == "deb":
-        fields = run("dpkg-deb", "-f", str(package), "Architecture", "Version", "Depends")
-        if f"Version: {version.replace('-preview', '~preview')}-1" not in fields or (
+        fields = run("dpkg-deb", "-f", str(package), "Package", "Architecture", "Version", "Depends",
+                     "Conflicts", "Replaces", "Provides")
+        if f"Package: {PACKAGE}\n" not in fields + "\n" or f"Version: {debian_version(version)}-1" not in fields or (
                 f"Architecture: {architecture}" not in fields or any(name not in fields for name in
                     ("espeak-ng", "hicolor-icon-theme", "libgles2", "libegl1"))):
-            raise ValueError("DEB version, architecture or required dependencies are incorrect")
+            raise ValueError("DEB name, version, architecture or required dependencies are incorrect")
+        if any(field in fields for field in ("Conflicts:", "Replaces:", "Provides:")):
+            raise ValueError("The prototype DEB must install beside the regular Lichen")
     elif kind == "rpm":
         fields = run("podman", "run", "--rm", "--network=none", "--userns=keep-id", "-v", f"{ROOT}:/src:ro",
                      "localhost/om-rpm", "rpm", "-qp", "--qf", "%{ARCH}\\n%{VERSION}\\n%{REQUIRENAME}\\n",
                      "/src/" + str(package))
-        if fields.splitlines()[:2] != [ARCHITECTURES[architecture], version.replace("-preview", "~preview")]:
+        if fields.splitlines()[:2] != [ARCHITECTURES[architecture], debian_version(version)]:
             raise ValueError("RPM architecture or version is incorrect")
         dependencies = run("podman", "run", "--rm", "--network=none", "--userns=keep-id", "-v", f"{ROOT}:/src:ro",
                            "localhost/om-rpm", "rpm", "-qp", "--requires", "/src/" + str(package))
@@ -123,6 +125,8 @@ def release_assets(directory):
 
 
 def draft(version):
+    if "-prototype" in version:
+        raise ValueError("Prototype builds are test artifacts and are never published as releases")
     extract(ROOT / "out/ci/release-files.tar")
     directory = ROOT / "out/release" / version
     assets = release_assets(directory)

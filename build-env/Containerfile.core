@@ -1,0 +1,12 @@
+# Tools for preparing the CoMaps core sources: what its configure.sh needs to generate styles,
+# symbols and strings. The output is architecture independent and shared by every package build.
+FROM docker.io/library/debian:trixie
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    build-essential cmake ninja-build pkg-config python3 python3-venv git ca-certificates \
+    jq optipng icu-devtools zlib1g-dev libicu-dev libfreetype-dev libharfbuzz-dev \
+    qt6-base-dev qt6-svg-dev qt6-positioning-dev libgl-dev \
+    libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
+    && rm -rf /var/lib/apt/lists/*
+# The style compiler needs Python protobuf 3.x (Debian ships 4.x); CMake uses an active venv.
+RUN python3 -m venv /opt/venv && /opt/venv/bin/pip install --no-cache-dir protobuf==3.20.3
+ENV VIRTUAL_ENV=/opt/venv PATH=/opt/venv/bin:$PATH

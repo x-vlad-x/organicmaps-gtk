@@ -1,5 +1,8 @@
 # Package builds
 
+This branch builds **Lichen Preview**, the prototype on the CoMaps core: package and command
+`lichen-devel`, application ID `io.github.x_vlad_x.Lichen.Devel`, installable beside `lichen`.
+
 The project builds **DEB, RPM and AppImage for both x86_64 and ARM64**. The package
 architecture is verified from the ELF executable, package metadata and build manifest.
 Local recipes do not install on the host, copy files to a phone or publish a release.
@@ -18,11 +21,12 @@ the original cross toolchain and glibc compatibility shim; RPM/AppImage do not u
 
 ## Application icon
 
-`io.github.x_vlad_x.Lichen.svg` is the icon source and is installed as the scalable icon.
-After changing it, re-render the 512 px PNG used for the fixed-size icons and the AppImage:
+`io.github.x_vlad_x.Lichen.Devel.svg` is the icon source (the Lichen icon with a "DEV" band)
+and is installed as the scalable icon. After changing it, re-render the 512 px PNG used for the
+fixed-size icons and the AppImage:
 
 ```sh
-rsvg-convert -w 512 -h 512 packaging/io.github.x_vlad_x.Lichen.svg -o packaging/io.github.x_vlad_x.Lichen.png
+rsvg-convert -w 512 -h 512 packaging/io.github.x_vlad_x.Lichen.Devel.svg -o packaging/io.github.x_vlad_x.Lichen.Devel.png
 ```
 
 ## Build locally
@@ -42,11 +46,13 @@ The `phone` and `desktop` aliases still mean `deb-arm64` and `appimage-amd64`.
 Set `LICHEN_BUILD_JOBS` to limit compiler processes (default: 8). Outputs are in
 `out/packages/`; all build directories and downloads are ignored by Git.
 
-The core is pinned to tag `2026.09.29-32-android`, commit
-`b20d1417eef1e3c63a447ac8658db4307a066024`, with the included GTK integration patch.
-The script initializes recursive submodules and refuses to switch an existing
-checkout to another revision. Containers use distribution repositories, so the
-recipe does not claim bit-for-bit reproducibility across dependency updates.
+The core is CoMaps, pinned in `tools/core.env` (the only place naming its repository and
+commit) and checked out into `core/`. `tools/prepare-core.sh` initializes recursive
+submodules, applies the GTK integration patch, downloads and verifies the world maps and
+runs the core's `configure.sh` in `build-env/Containerfile.core` without network access to
+generate drawing rules, symbols, strings and Boost headers. It refuses to switch an existing
+checkout to another revision. Containers use distribution repositories, so the recipe does
+not claim bit-for-bit reproducibility across dependency updates.
 
 AppImage tools for both architectures are checksum-pinned in `appimage-tools.json`.
 A changed upstream download fails verification; review it before updating the lock.
@@ -55,7 +61,7 @@ are collected from the target architecture's Debian environment.
 
 ## RPM and source RPM
 
-`packaging/lichen.spec` is expanded with the project version and built
+`packaging/lichen-devel.spec` is expanded with the project version and built
 inside Fedora 44. It compiles the interface and pinned core, installs only the
 Lichen component, and runs desktop metadata and version checks.
 RPM generates ELF library dependencies automatically; eSpeak and hicolor icons
@@ -67,13 +73,13 @@ static GCC runtime and its source/copyright inventories. No Debian-built binary
 or Debian library names are repackaged into the Fedora RPM.
 
 The x86_64 RPM build also produces an architecture-independent source RPM containing
-all interface files, the patched core, recursive submodule sources and a concrete
-spec file. Git metadata, private local notes and build output are excluded.
+all interface files, the patched and prepared core (with the world maps and generated
+data), recursive submodule sources and a concrete spec file. Git metadata, private local notes and build output are excluded.
 To rebuild it on either architecture in Fedora 44, install the spec's build
 dependencies (listed in `build-env/Containerfile.rpm`) and run:
 
 ```sh
-rpmbuild --rebuild lichen-0.1.0-preview6-1.fc44.src.rpm
+rpmbuild --rebuild lichen-devel-0.1.0-prototype1-1.fc44.src.rpm
 ```
 
 The source RPM contains project sources; it does not need to clone repositories.
@@ -108,6 +114,7 @@ The `release-files` artifact contains a tar archive of all six installers,
 source RPM, source archives/parts, instructions, inventories and `SHA256SUMS`.
 Intermediate artifacts are retained for 7 days; the final artifact for 14 days.
 
+Prototype versions (`-prototypeN`) are never published: the draft step refuses them.
 For a release, update `VERSION`, release notes and installation examples, commit,
 and push a matching `v<VERSION>` tag. After every target passes, the workflow
 creates a draft and checks uploaded asset hashes and sizes. Review and publish
@@ -122,8 +129,8 @@ collect its compiler inventory and (for AppImage) bundled library inventory:
 
 ```sh
 python3 tools/collect_debian_sources.py \
-  out/packages/appimage-amd64/Lichen.AppDir/usr/share/doc/lichen/bundled/bundled-packages.json \
-  out/packages/appimage-amd64/Lichen.AppDir/usr/share/doc/lichen/compiler-runtime/sources.json \
+  out/packages/appimage-amd64/LichenPreview.AppDir/usr/share/doc/lichen-devel/bundled/bundled-packages.json \
+  out/packages/appimage-amd64/LichenPreview.AppDir/usr/share/doc/lichen-devel/compiler-runtime/sources.json \
   --container localhost/om-desktop --output out/corresponding-sources/appimage-amd64
 ```
 

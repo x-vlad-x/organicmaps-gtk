@@ -1,13 +1,23 @@
 # Lichen
 
-An unofficial native GNOME interface (GTK4 + libadwaita) for [Organic Maps](https://organicmaps.app),
-made for Linux phones. Previously published as "Organic Maps (GTK)"; releases up to 0.1.0-preview5
+> **Branch `comaps-core-prototype`: Lichen Preview.** This branch is a feasibility prototype
+> that replaces the Organic Maps core with the [CoMaps](https://www.comaps.app) core. It builds
+> `lichen-devel` packages ("Lichen Preview", application ID `io.github.x_vlad_x.Lichen.Devel`)
+> that install beside the regular Lichen and keep their data in `~/.local/share/CoMaps` and
+> `~/.config/CoMaps`. Its packages are workflow artifacts, not releases; the decision to switch
+> cores has not been made. The rest of this page describes Lichen as built on this branch.
+
+An unofficial native GNOME interface (GTK4 + libadwaita) for offline maps, made for Linux phones.
+The regular Lichen uses the [Organic Maps](https://organicmaps.app) core; this branch uses CoMaps. Previously published as "Organic Maps (GTK)"; releases up to 0.1.0-preview5
 use that name and the `organicmaps-gtk` package name.
 Developed and tested on the FuriLabs FLX1s with FuriOS (Phosh).
 An x86_64 AppImage is also tested on CachyOS. Other systems need separate testing;
 package dependencies and supported versions are documented in [packaging/README.md](packaging/README.md).
 
 ## Download
+
+These are releases of the regular, Organic Maps based Lichen. The prototype from this branch is
+only available from the "Packages" workflow runs.
 
 **[Download 0.1.0-preview5](https://github.com/x-vlad-x/lichen/releases/tag/v0.1.0-preview5)**
 
@@ -34,8 +44,8 @@ Sources, a rebuildable source RPM and license notices are available with the rel
 | ![Place page](docs/screenshots/place-page.webp) | ![Search](docs/screenshots/search.webp) | ![Route planning](docs/screenshots/route.webp) | ![Navigation](docs/screenshots/navigation.webp) |
 | ![Night mode](docs/screenshots/night-mode.webp) | ![Map downloader](docs/screenshots/downloader.webp) | ![Map layers](docs/screenshots/layers.webp) | ![Settings](docs/screenshots/settings.webp) |
 
-The core (map rendering, search, routing, map downloads, bookmarks) is the official Organic Maps code,
-unchanged. The interface is new and follows the Android app:
+The core (map rendering, search, routing, map downloads, bookmarks) is the CoMaps code, unchanged
+apart from a small build patch. The interface is new and follows the Android app:
 
 - full-screen map rendered on the GPU (OpenGL ES 3 through GtkGLArea);
 - Android-style touch gestures: drag, pinch, two-finger rotation, double tap, long tap (hides/shows
@@ -50,14 +60,14 @@ unchanged. The interface is new and follows the Android app:
 - map downloader: country tree, search, updates, "Download <region>" banner on the map;
 - bookmarks and tracks: lists, bookmark editor (name, color, list, notes), KML/KMZ/GPX import,
   track recording;
-- layers: outdoors, hiking and cycling routes, isolines, subway; night mode (the UI turns dark
-  together with the map); settings as in the Android app;
+- map modes (walking with hiking routes, cycling, driving, public transport) and the outdoors and
+  contour line layers; night mode (the UI turns dark together with the map); settings as in the
+  Android app;
 - location through GeoClue, compass through iio-sensor-proxy;
-- opens `geo:` and `om://` links and bookmark files.
+- opens `geo:`, `cm://` and `comaps://` links and bookmark files.
 
-The UI is translated into all languages Organic Maps supports: strings come from the same
-translations as the Android and iOS apps (`data/strings/strings.txt`), the language follows the system
-locale.
+The UI is translated into the languages of the CoMaps Android app: strings come from its Android
+resources (`values-<locale>/strings.xml`), the language follows the system locale.
 
 ## Building and installing
 
@@ -70,7 +80,7 @@ Requirements on the build machine (x86_64 Linux): git, podman, ImageMagick, rsyn
 The phone must be reachable over SSH with key authentication.
 
 ```bash
-./update-lichen.sh            # build the latest Organic Maps release and install it on the phone
+./update-lichen.sh            # build the pinned CoMaps core and install Lichen Preview on the phone
 ./update-lichen.sh --ui-only  # quickly update only the program (after changes in gtk-ui/)
 ./update-lichen.sh --check    # what is installed on the phone, is there an update
 ./update-lichen.sh --build-only
@@ -79,22 +89,24 @@ The phone must be reachable over SSH with key authentication.
 
 The SSH destination is taken from `PHONE` (default `furios`), e.g. `PHONE=furios@192.168.1.10`.
 
-The script clones Organic Maps at the latest release tag into `organicmaps/`, applies the build patch
-and cross-compiles for aarch64 in a Debian testing container (`build-env/`). The first build takes
-about 15 minutes, later ones a couple of minutes. The result is in `out/`.
+The script fetches CoMaps at the commit pinned in `tools/core.env` into `core/`, prepares it with
+`tools/prepare-core.sh` (submodules, build patch, world maps, generated styles and strings) and
+cross-compiles for aarch64 in a Debian testing container (`build-env/`). The first build takes
+about 20 minutes, later ones a couple of minutes. The result is in `out/`.
 
-On the phone the program is installed to `~/.local/share/lichen`, maps go to
-`~/.local/share/OrganicMaps`, settings and bookmarks to `~/.config/OrganicMaps` (the same locations
-as the official Qt desktop app). No root access is needed.
+On the phone the program is installed to `~/.local/share/lichen-devel`, maps go to
+`~/.local/share/CoMaps`, settings and bookmarks to `~/.config/CoMaps` (the same locations as the CoMaps Qt desktop
+app). The regular Lichen and its `OrganicMaps` directories are not touched. No root access is needed.
 
 ## Project layout
 
 - `gtk-ui/` — the interface, C++ on the plain GTK4/libadwaita C API: `map_view` (GtkGLArea and drape
   contexts on their own threads, touch input), `main_window`, `place_page`, `search`, `routing`,
-  `downloader`, `bookmarks`, `settings`, `location` (GeoClue), `tts`, `l10n` (twine strings);
+  `downloader`, `bookmarks`, `settings`, `location` (GeoClue), `tts`, `l10n` (Android string resources);
 - `gtk-ui/icons/` — icons converted from the Android app (`tools/vector2svg.py`);
-- `patches/` — the build patch for Organic Maps: hooks `gtk-ui/` into the CMake tree and takes the
-  translated strings from the app instead of the stub;
+- `patches/` — the build patch for CoMaps: hooks `gtk-ui/` into the CMake tree, links the bundled
+  ICU, FreeType and HarfBuzz and takes the translated strings from the app instead of the stub;
+- `tools/core.env` — the CoMaps repository and pinned commit; `tools/prepare-core.sh` prepares it;
 - `build-env/` — container and CMake toolchain for cross-compilation;
 - `packaging/` — launcher, desktop entry, icon (SVG source and a 512 px PNG rendered from it) and
   package recipes;
@@ -106,7 +118,7 @@ With `LICHEN_DEBUG=1` the app accepts commands over D-Bus, which is handy for te
 without touching it (see `gtk-ui/debug.cpp` for the command list):
 
 ```bash
-gdbus call --session --dest io.github.x_vlad_x.Lichen --object-path /io/github/x_vlad_x/Lichen \
+gdbus call --session --dest io.github.x_vlad_x.Lichen.Devel --object-path /io/github/x_vlad_x/Lichen/Devel \
   --method org.gtk.Actions.Activate debug "[<'tap 200 400'>]" "{}"
 ```
 
@@ -114,7 +126,7 @@ gdbus call --session --dest io.github.x_vlad_x.Lichen --object-path /io/github/x
 
 Apache License 2.0, see [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
-This project is not affiliated with or endorsed by the Organic Maps project. It is built on the
-[Organic Maps Project](https://organicmaps.app) code, interface icons and translations; the Lichen
-application icon is original. Map data
-© [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
+This project is not affiliated with or endorsed by CoMaps. This branch is based on
+[CoMaps](https://www.comaps.app) code, translations and turn icons; the interface icons come from the
+Organic Maps Android app and the Lichen application icon is original. Map data
+© [OpenStreetMap contributors](https://www.openstreetmap.org/copyright).

@@ -246,7 +246,7 @@ void SearchUi::RunSearch(std::string const & query, bool isCategory)
   params.m_query = query;
   params.m_inputLocale = InputLocale();
   params.m_isCategory = isCategory;
-  params.m_onResults = [this, timestamp](search::Results results)
+  params.m_onResults = [this, timestamp](search::Results results, std::vector<search::ProductInfo>)
   {
     // Results arrive on the GUI thread already.
     OnResults(timestamp, std::move(results));
@@ -286,8 +286,7 @@ GtkWidget * SearchUi::MakeResultRow(search::Result const & r)
   }
   else
   {
-    std::string type = r.GetLocalizedFeatureType();
-    auto desc = r.GetFeatureDescription(type);
+    auto desc = r.GetFeatureDescription();
     if (!desc.empty())
     {
       auto * l = gtk_label_new(desc.c_str());

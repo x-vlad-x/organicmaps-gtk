@@ -5,8 +5,8 @@
 
 namespace lichen
 {
-// UI strings come from data/strings/strings.txt (the same twine file Android and iOS use),
-// so every label is translated exactly like in the phone app.
+// UI strings come from the CoMaps Android resources (values-<locale>/strings.xml and
+// types_strings.xml), so labels are translated like in the CoMaps Android app.
 void InitLocalization();
 std::string const & CurrentLanguage();
 

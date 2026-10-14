@@ -1,10 +1,25 @@
 #!/usr/bin/env bash
-# strkey.sh <regex on English text> [lang]  — lists twine keys with English and translated values
-# (default language: de).
-F="$(dirname "$0")/../organicmaps/data/strings/strings.txt"
-awk -v re="$1" -v lang="${2:-de}" '
-/^\[\[/ {next}
-/^\[/ {key=$0; en=""; hit=0; next}
-/^en = / {en=substr($0,6); hit = (en ~ re); if (hit && lang == "en") {printf "%-45s | %s\n", key, en; hit=0}; next}
-index($0, lang " = ") == 1 {if (hit) printf "%-45s | %s | %s\n", key, en, substr($0, length(lang) + 4); hit=0}
-' "$F"
+# strkey.sh <regex on English text> [lang]  — lists string keys of the CoMaps Android resources
+# with English and translated values (default language: de, i.e. values-de; "en" prints English only).
+python3 - "$(dirname "$0")/../core/android" "$1" "${2:-de}" <<'PY'
+import re
+import sys
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+root, pattern, lang = Path(sys.argv[1]), re.compile(sys.argv[2]), sys.argv[3]
+
+
+def load(folder):
+    strings = {}
+    for path in root.glob(f"*/src/main/res/{folder}/*strings.xml"):
+        for element in ET.parse(path).getroot().iter("string"):
+            strings[element.get("name")] = "".join(element.itertext())
+    return strings
+
+
+english, translated = load("values"), load(f"values-{lang}")
+for key, value in sorted(english.items()):
+    if pattern.search(value):
+        print(f"{key:45} | {value}" + ("" if lang == "en" else f" | {translated.get(key, '')}"))
+PY

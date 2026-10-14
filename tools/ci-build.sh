@@ -34,10 +34,13 @@ if [[ "$kind" == appimage ]]; then
   [[ "$actual" == "$version" ]]
 elif [[ "$kind" == rpm ]]; then
   machine="$(uname -m)"
-  podman run --rm -v "$PWD:/src:ro" registry.fedoraproject.org/fedora:44 sh -ec '
-    dnf -y --setopt=install_weak_deps=False install "$1"
+  podman build -t localhost/om-rpm-smoke -f build-env/Containerfile.rpm-smoke build-env
+  mkdir -p "out/ci/smoke-$target"
+  podman run --rm -v "$PWD:/src:ro" -v "$PWD/out/ci/smoke-$target:/artifacts:z" localhost/om-rpm-smoke sh -ec '
+    dnf -y --setopt=zchunk=False --setopt=install_weak_deps=False install "$1"
     test "$(/usr/bin/organicmaps-gtk --version)" = "$2"
     rpm -V organicmaps-gtk
+    python3 /src/tools/smoke_rpm.py /artifacts
   ' sh "/src/out/packages/organicmaps-gtk-$version-1.fc44.$machine.rpm" "$version"
 elif [[ "$arch" == amd64 ]]; then
   podman run --rm -v "$PWD:/src:ro" docker.io/library/debian:trixie sh -ec '

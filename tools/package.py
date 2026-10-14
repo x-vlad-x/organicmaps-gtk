@@ -127,7 +127,7 @@ def build_deb(args, stage, architecture, version):
     (control / "control").write_text(
         f"Package: organicmaps-gtk\nVersion: {version}\nArchitecture: {architecture}\n"
         f"Maintainer: {maintainer}\nSection: education\nPriority: optional\n"
-        f"Installed-Size: {installed_size}\nDepends: {dependencies}, espeak-ng, hicolor-icon-theme\n"
+        f"Installed-Size: {installed_size}\nDepends: {dependencies}, espeak-ng, hicolor-icon-theme, libgles2, libegl1\n"
         "Recommends: geoclue-2.0, iio-sensor-proxy\n"
         "Homepage: https://github.com/x-vlad-x/organicmaps-gtk\n"
         "Description: Unofficial GTK interface for offline maps and navigation\n"

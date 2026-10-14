@@ -1,0 +1,6 @@
+FROM registry.fedoraproject.org/fedora:44
+# Software graphics and test tools only; the RPM must supply its GTK/Qt/GLES dependencies.
+RUN dnf -y --setopt=zchunk=False --setopt=install_weak_deps=False install \
+    xorg-x11-server-Xvfb dbus-daemon mesa-dri-drivers mesa-libEGL \
+    python3-gobject gobject-introspection glibc-langpack-en shadow-utils && dnf clean all
+RUN useradd --create-home app

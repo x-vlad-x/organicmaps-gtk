@@ -85,11 +85,14 @@ The pipeline checks:
 - exact corresponding Debian sources for AppImage and static compiler runtimes;
 - installation, dependency resolution and `--version` in clean Fedora containers
   for **both RPM architectures**, plus clean Debian installation for amd64 DEB;
+- unprivileged RPM GUI startup, desktop icon lookup and OpenGL ES 3 map rendering
+  on an isolated software display, with screenshots and logs retained as CI artifacts;
 - AppImage startup without FUSE or a display in separate Debian 13 runtime
   containers with system graphics/font libraries and no preinstalled GTK or Qt;
 - source completeness, source RPM inclusion and SHA-256 for every release asset.
 
-These checks do not replace actual GUI, GPS or navigation tests on devices.
+The RPM graphics checks use software rendering in Xvfb. They do not replace
+physical GPU, GPS or navigation tests on devices.
 
 Use **Actions → Packages → Run workflow** to build without creating a release.
 The `release-files` artifact contains a tar archive of all six installers,

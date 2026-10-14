@@ -18,7 +18,8 @@ cannot run on an x86_64 computer. See `README.md` for installation commands.
 - A complete source RPM containing the interface, core, patches and recursive submodules.
 - Six package builds in GitHub Actions, with ARM64 RPM/AppImage built on native ARM runners.
 - Package installation checks in clean Debian/Fedora containers and AppImage startup
-  checks in separate Debian 13 runtime containers.
+  checks in separate Debian 13 runtime containers. RPM checks also start the GUI
+  as an unprivileged user and initialize the OpenGL ES 3 map renderer.
 - Architecture-specific library/plugin collection and pinned tools for both AppImages.
 - Corrected screenshot URLs in the previous preview's release description.
 

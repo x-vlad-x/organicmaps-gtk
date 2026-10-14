@@ -71,7 +71,8 @@ def bundle(target):
     if kind == "deb":
         fields = run("dpkg-deb", "-f", str(package), "Architecture", "Version", "Depends")
         if f"Version: {version.replace('-preview', '~preview')}-1" not in fields or (
-                f"Architecture: {architecture}" not in fields or "espeak-ng" not in fields or "hicolor-icon-theme" not in fields):
+                f"Architecture: {architecture}" not in fields or any(name not in fields for name in
+                    ("espeak-ng", "hicolor-icon-theme", "libgles2", "libegl1"))):
             raise ValueError("DEB version, architecture or required dependencies are incorrect")
     elif kind == "rpm":
         fields = run("podman", "run", "--rm", "--network=none", "--userns=keep-id", "-v", f"{ROOT}:/src:ro",
@@ -79,6 +80,10 @@ def bundle(target):
                      "/src/" + str(package))
         if fields.splitlines()[:2] != [ARCHITECTURES[architecture], version.replace("-preview", "~preview")]:
             raise ValueError("RPM architecture or version is incorrect")
+        dependencies = run("podman", "run", "--rm", "--network=none", "--userns=keep-id", "-v", f"{ROOT}:/src:ro",
+                           "localhost/om-rpm", "rpm", "-qp", "--requires", "/src/" + str(package))
+        if any(name not in dependencies for name in ("espeak-ng", "hicolor-icon-theme", "libglvnd-gles", "libglvnd-egl")):
+            raise ValueError("RPM is missing required speech, icon or graphics dependencies")
     else:
         metadata.append(stage / DOC / "bundled/bundled-packages.json")
     paths = [package, *metadata]

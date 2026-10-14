@@ -16,6 +16,8 @@ BuildRequires:  gtk4-devel libadwaita-devel geoclue2-devel qt6-qtbase-devel
 BuildRequires:  libglvnd-devel libepoxy-devel ImageMagick desktop-file-utils
 BuildRequires:  libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
 Requires:       espeak-ng hicolor-icon-theme
+# libepoxy loads the GLES/EGL entry points dynamically, outside automatic ELF dependencies.
+Requires:       libglvnd-gles%{?_isa} libglvnd-egl%{?_isa}
 Recommends:     geoclue2 iio-sensor-proxy
 
 %description

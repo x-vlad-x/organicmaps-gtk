@@ -1,0 +1,10 @@
+# Debian 13 gives the preview AppImage an older glibc baseline than the development host.
+FROM docker.io/library/debian:trixie
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    build-essential cmake ninja-build pkg-config python3 git ca-certificates \
+    libgtk-4-dev libadwaita-1-dev libgeoclue-2-dev qt6-base-dev \
+    libgl-dev libegl-dev libgles-dev libepoxy-dev \
+    espeak-ng patchelf desktop-file-utils \
+    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    librsvg2-common file && rm -rf /var/lib/apt/lists/*

@@ -2,5 +2,7 @@
 /organicmaps/
 # Build output
 /build-aarch64/
+/build-x86_64/
+/build-appimage/
 /out/
 __pycache__/

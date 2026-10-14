@@ -217,7 +217,12 @@ void MapView::CreateEngine(int w, int h)
 
   m_skin = std::make_unique<gui::Skin>(gui::ResolveGuiSkinFile("default"), m_scale);
   m_skin->Resize(w, h);
-  m_skin->ForEach([&p](gui::EWidget widget, gui::Position const & pos) { p.m_widgetsInitInfo[widget] = pos; });
+  m_skin->ForEach([&p](gui::EWidget widget, gui::Position const & pos)
+  {
+    // MainWindow provides persistent, clickable GTK attribution instead of the fading GL label.
+    if (widget != gui::WIDGET_COPYRIGHT)
+      p.m_widgetsInitInfo[widget] = pos;
+  });
   p.m_widgetsInitInfo[gui::WIDGET_SCALE_FPS_LABEL] = gui::Position(dp::LeftTop);
 
   auto & fw = GetFramework();
@@ -247,9 +252,8 @@ void MapView::UpdateWidgetLayout()
   double const bottom = m_insets[1] * s;
 
   gui::TWidgetsLayoutInfo layout;
-  // Ruler and copyright: bottom-left above the bottom panels; compass: top-right below the top ones.
+  // Ruler: bottom-left above the bottom panels; compass: top-right below the top ones.
   layout[gui::WIDGET_RULER] = m2::PointD(margin, m_pixelHeight - bottom - margin);
-  layout[gui::WIDGET_COPYRIGHT] = m2::PointD(margin, m_pixelHeight - bottom - margin);
   layout[gui::WIDGET_COMPASS] = m2::PointD(m_pixelWidth - margin - 24 * s, top + margin + 24 * s);
   auto & fw = GetFramework();
   fw.SetWidgetLayout(std::move(layout));

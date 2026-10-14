@@ -1,8 +1,9 @@
 # Organic Maps (GTK)
 
 An unofficial native GNOME interface (GTK4 + libadwaita) for [Organic Maps](https://organicmaps.app),
-made for Linux phones. Developed and tested on the FuriLabs FLX1s with FuriOS (Phosh), but it should
-work on any aarch64 phone or tablet running GTK 4.12+ and libadwaita 1.6+.
+made for Linux phones. Developed and tested on the FuriLabs FLX1s with FuriOS (Phosh).
+An x86_64 AppImage is also tested on CachyOS. Other systems need separate testing;
+package dependencies and supported versions are documented in [packaging/README.md](packaging/README.md).
 
 | | | | |
 |:-:|:-:|:-:|:-:|
@@ -35,6 +36,10 @@ translations as the Android and iOS apps (`data/strings/strings.txt`), the langu
 locale.
 
 ## Building and installing
+
+Local preview `.deb` (ARM64 phone) and AppImage (x86_64 desktop) build recipes are
+described in [packaging/README.md](packaging/README.md). These previews are not yet
+public releases. The original SSH installation method remains available below.
 
 Requirements on the build machine (x86_64 Linux): git, podman, ImageMagick, rsync, python3, ssh.
 The phone must be reachable over SSH with key authentication.

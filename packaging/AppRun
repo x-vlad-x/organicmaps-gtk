@@ -1,0 +1,24 @@
+#!/bin/sh
+set -eu
+APPDIR="$(CDPATH= cd -- "$(dirname -- "$(readlink -f -- "$0")")" && pwd)"
+export PATH="$APPDIR/usr/bin:$PATH"
+export LD_LIBRARY_PATH="$APPDIR/usr/lib:$APPDIR/usr/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export XDG_DATA_DIRS="$APPDIR/usr/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+export GSETTINGS_SCHEMA_DIR="$APPDIR/usr/share/glib-2.0/schemas"
+export GIO_MODULE_DIR="$APPDIR/usr/lib/gio/modules"
+export GDK_PIXBUF_MODULEDIR="$APPDIR/usr/lib/gdk-pixbuf-2.0/2.10.0/loaders"
+export QT_PLUGIN_PATH="$APPDIR/usr/lib/qt6/plugins"
+export ESPEAK_DATA_PATH="$APPDIR/usr/share/espeak-ng-data"
+
+# Loader caches contain absolute filenames and must be regenerated after relocation.
+cache="$(mktemp -d "${TMPDIR:-/tmp}/organicmaps-gtk-loaders.XXXXXXXX")"
+trap 'rm -rf -- "$cache"' EXIT HUP INT TERM
+if [ -x "$APPDIR/usr/bin/gdk-pixbuf-query-loaders" ]; then
+  "$APPDIR/usr/bin/gdk-pixbuf-query-loaders" > "$cache/loaders.cache"
+  export GDK_PIXBUF_MODULE_FILE="$cache/loaders.cache"
+fi
+set +e
+"$APPDIR/usr/bin/organicmaps-gtk" "$@"
+status=$?
+set -e
+exit "$status"

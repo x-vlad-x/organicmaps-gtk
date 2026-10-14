@@ -1,0 +1,14 @@
+AppImage type2-runtime
+Source commit: 8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa
+https://github.com/AppImage/type2-runtime
+
+The runtime includes statically linked third-party code. Its upstream build
+scripts select libfuse 3.15.0 and squashfuse 0.5.2 and obtain other dependencies
+from Alpine Linux. The runtime Makefile also links mimalloc, although the
+upstream executable's help omits it from the displayed library list.
+
+The accompanying files preserve the runtime MIT license, libfuse LGPL-2.1
+license, and notices for squashfuse, musl, zstd, zlib and mimalloc. The pinned
+source archive and dependency patch/build scripts are in the corresponding
+sources artifact. Permissive-library notice reference versions in
+runtime-sources.json do not assert bit-identical upstream build provenance.

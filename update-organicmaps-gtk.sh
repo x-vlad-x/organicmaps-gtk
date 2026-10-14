@@ -134,10 +134,11 @@ if ! podman image exists "$IMAGE"; then
 fi
 
 # --- build -------------------------------------------------------------------
+python3 "$SCRIPT_DIR/tools/prepare_package_assets.py" "$SRC_DIR" "$OUT_DIR/package-icons" "$(command -v magick)"
 log "Building (aarch64)"
 in_container cmake -S organicmaps -B build-aarch64 -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_TOOLCHAIN_FILE=/src/build-env/aarch64-toolchain.cmake -DSKIP_QT_GUI=ON -DSKIP_TESTS=ON \
-  -DBUILD_TESTING=OFF -DOMIM_GTK_APP_DIR=/src/gtk-ui >/dev/null
+  -DBUILD_TESTING=OFF -DOMIM_GTK_APP_DIR=/src/gtk-ui -DOMGTK_PREPARED_ICONS=/src/out/package-icons >/dev/null
 in_container ninja -C build-aarch64 -j"$(nproc)" organicmaps-gtk
 in_container aarch64-linux-gnu-strip -o build-aarch64/organicmaps-gtk.stripped build-aarch64/organicmaps-gtk
 NEED_GLIBC=$(in_container aarch64-linux-gnu-objdump -T build-aarch64/organicmaps-gtk | grep -o 'GLIBC_2\.[0-9]*' | sort -uV | tail -1)
@@ -163,20 +164,7 @@ rsync -a --delete \
 # Icons: our symbolic SVGs plus the turn and junction icons from the Android app.
 cp "$SCRIPT_DIR"/gtk-ui/icons/*.svg "$DIST/icons/"
 cp "$SCRIPT_DIR/packaging/$APP_ID.png" "$DIST/icons/"
-RES="$SRC_DIR/android/sdk/src/main/res"
-for f in "$RES"/drawable-xxxhdpi/ic_turn_*.webp "$RES"/drawable-xxxhdpi/ic_exit_highway_to_*.webp; do
-  n=$(basename "$f" .webp)
-  n=${n/ic_exit_highway_to_/om-exit-highway-}
-  n=${n/ic_turn_/om-turn-}
-  n=${n//_/-}
-  magick "$f" "$DIST/icons/$n.png"
-done
-conv=(--color)
-for f in "$RES"/drawable/ic_roundabout_exit_*.xml; do
-  n=$(basename "$f" .xml); n=${n#ic_}; conv+=("$f=$DIST/icons/om-${n//_/-}.svg")
-done
-conv+=("$RES/drawable/ic_turn_round.xml=$DIST/icons/om-turn-round.svg")
-python3 "$SCRIPT_DIR/tools/vector2svg.py" "${conv[@]}"
+rsync -a --exclude .stamp "$OUT_DIR/package-icons/" "$DIST/icons/"
 
 echo "$FULL_VERSION" > "$DIST/VERSION"
 echo "Done: $DIST ($(du -sh "$DIST" | cut -f1))"
@@ -189,7 +177,9 @@ rsh "pkill -f '[b]in/organicmaps-gtk' ; true"
 
 install_desktop_entry() {
   rsh "set -e; mkdir -p .local/share/applications
-       sed \"s|@HOME@|\$HOME|g\" $REMOTE_DIR/$APP_ID.desktop > .local/share/applications/$APP_ID.desktop
+       sed -e \"s|^Exec=.*|Exec=\$HOME/$REMOTE_DIR/organicmaps-gtk %U|\" \\
+           -e \"s|^Icon=.*|Icon=\$HOME/$REMOTE_DIR/$APP_ID.png|\" \\
+           $REMOTE_DIR/$APP_ID.desktop > .local/share/applications/$APP_ID.desktop
        rm -f .local/share/applications/$OLD_APP_ID.desktop $REMOTE_DIR/$OLD_APP_ID.desktop $REMOTE_DIR/$OLD_APP_ID.png
        update-desktop-database .local/share/applications 2>/dev/null || true"
 }

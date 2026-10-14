@@ -1,0 +1,36 @@
+#!/bin/sh
+# Run as the desktop user after replacing the original SSH install with a package.
+# Package maintainer scripts must not modify files in users' home directories.
+set -eu
+
+APP_ID=io.github.x_vlad_x.OrganicMapsGtk
+PREFIX="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+SYSTEM_ENTRY="$PREFIX/share/applications/$APP_ID.desktop"
+LOCAL_ENTRY="${XDG_DATA_HOME:-$HOME/.local/share}/applications/$APP_ID.desktop"
+LEGACY_DIR="$HOME/.local/share/organicmaps-gtk"
+
+if [ ! -f "$SYSTEM_ENTRY" ] || [ ! -x "$PREFIX/bin/organicmaps-gtk" ]; then
+  echo "The packaged application must be installed before migrating its launcher." >&2
+  exit 1
+fi
+if [ ! -e "$LOCAL_ENTRY" ] && [ ! -L "$LOCAL_ENTRY" ]; then
+  echo "The packaged launcher is already available. No local override to migrate."
+  exit 0
+fi
+if [ -L "$LOCAL_ENTRY" ] || [ ! -f "$LOCAL_ENTRY" ] ||
+   ! grep -Fqx "Exec=$LEGACY_DIR/organicmaps-gtk %U" "$LOCAL_ENTRY" ||
+   ! grep -Fqx "Icon=$LEGACY_DIR/$APP_ID.png" "$LOCAL_ENTRY" ||
+   grep -Eq '^(Hidden|NoDisplay|OnlyShowIn|NotShowIn|TryExec)=' "$LOCAL_ENTRY"; then
+  echo "The local desktop entry has custom settings; it was left unchanged: $LOCAL_ENTRY" >&2
+  exit 1
+fi
+
+BACKUP_ROOT="${XDG_STATE_HOME:-$HOME/.local/state}/organicmaps-gtk/launcher-backups"
+mkdir -p "$BACKUP_ROOT"
+BACKUP_DIR="$(mktemp -d "$BACKUP_ROOT/migration.XXXXXX")"
+mv -- "$LOCAL_ENTRY" "$BACKUP_DIR/$APP_ID.desktop"
+if command -v update-desktop-database >/dev/null 2>&1; then
+  update-desktop-database "$(dirname "$LOCAL_ENTRY")" ||
+    echo "Could not refresh the local desktop database; the launcher was migrated." >&2
+fi
+printf 'Packaged launcher: %s\nPrevious launcher saved in: %s\n' "$SYSTEM_ENTRY" "$BACKUP_DIR"

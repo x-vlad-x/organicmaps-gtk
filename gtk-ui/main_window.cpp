@@ -53,7 +53,7 @@ char const * MyPositionIcon(location::EMyPositionMode mode)
 MainWindow::MainWindow(AdwApplication * app)
 {
   m_window = ADW_APPLICATION_WINDOW(adw_application_window_new(GTK_APPLICATION(app)));
-  gtk_window_set_title(GTK_WINDOW(m_window), "Organic Maps");
+  gtk_window_set_title(GTK_WINDOW(m_window), "Organic Maps (GTK)");
   gtk_window_set_icon_name(GTK_WINDOW(m_window), kAppId);
   gtk_window_set_default_size(GTK_WINDOW(m_window), 420, 860);
 
@@ -146,7 +146,11 @@ void MainWindow::BuildUi()
   Connect<void(GObject *, GParamSpec *)>(m_sheet, "notify::sheet-height",
                                          [this](GObject *, GParamSpec *) { UpdateMapInsets(); });
 
-  m_mapPage = adw_navigation_page_new(GTK_WIDGET(m_sheet), "Organic Maps");
+  // Keep the map gestures separate from the standard draggable window header.
+  auto * mapToolbar = adw_toolbar_view_new();
+  adw_toolbar_view_add_top_bar(ADW_TOOLBAR_VIEW(mapToolbar), adw_header_bar_new());
+  adw_toolbar_view_set_content(ADW_TOOLBAR_VIEW(mapToolbar), GTK_WIDGET(m_sheet));
+  m_mapPage = adw_navigation_page_new(mapToolbar, "Organic Maps (GTK)");
   adw_navigation_page_set_tag(m_mapPage, "map");
   adw_navigation_view_add(m_nav, m_mapPage);
 
@@ -282,12 +286,24 @@ void MainWindow::BuildMapControls(GtkWidget * overlay)
   m_bottomSlot = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
   gtk_box_append(GTK_BOX(bottom), m_bottomSlot);
 
+  // Keep map attribution readable and keyboard-accessible, with links to both sources.
+  m_mapAttribution = gtk_label_new(nullptr);
+  gtk_label_set_markup(GTK_LABEL(m_mapAttribution),
+      "Map data © <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> and "
+      "<a href=\"https://organicmaps.app\">Organic Maps</a>");
+  gtk_label_set_wrap(GTK_LABEL(m_mapAttribution), TRUE);
+  gtk_label_set_justify(GTK_LABEL(m_mapAttribution), GTK_JUSTIFY_CENTER);
+  gtk_widget_set_halign(m_mapAttribution, GTK_ALIGN_CENTER);
+  gtk_widget_add_css_class(m_mapAttribution, "caption");
+  gtk_widget_add_css_class(m_mapAttribution, "map-attribution");
+  gtk_box_append(GTK_BOX(bottom), m_mapAttribution);
+
   m_bottomMenu = BuildBottomMenu();
   gtk_box_append(GTK_BOX(bottom), m_bottomMenu);
 
   gtk_overlay_add_overlay(GTK_OVERLAY(overlay), bottom);
 
-  // Let the engine know which parts of the map are covered (ruler, compass, copyright placement).
+  // Let the engine know which parts of the map are covered (ruler and compass placement).
   Connect<gboolean(GtkOverlay *, GtkWidget *, GdkRectangle *)>(
       overlay, "get-child-position", [this](GtkOverlay *, GtkWidget *, GdkRectangle *)
   {
@@ -339,7 +355,7 @@ void MainWindow::UpdateMapInsets()
 {
   if (m_shutdown)
     return;
-  int bottom = 0;
+  int bottom = gtk_widget_get_height(m_mapAttribution);
   if (gtk_widget_get_visible(m_bottomMenu))
     bottom += gtk_widget_get_height(m_bottomMenu);
   if (gtk_widget_get_visible(m_bottomSlot))
@@ -704,7 +720,19 @@ void MainWindow::ShowMenu()
   addRow("emblem-system-symbolic", T("settings"), [this]() { ShowSettings(); });
   addRow("help-about-symbolic", T("about_menu_title"), [this]() { ShowAboutDialog(*this); });
 
-  adw_toolbar_view_set_content(ADW_TOOLBAR_VIEW(toolbar), list);
+  auto * content = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+  gtk_box_append(GTK_BOX(content), list);
+  auto * attribution = gtk_label_new(nullptr);
+  gtk_label_set_markup(GTK_LABEL(attribution),
+      "Based on the <a href=\"https://organicmaps.app\">Organic Maps Project</a>\n"
+      "Map data © <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> and "
+      "<a href=\"https://organicmaps.app\">Organic Maps</a>");
+  gtk_label_set_wrap(GTK_LABEL(attribution), TRUE);
+  gtk_label_set_justify(GTK_LABEL(attribution), GTK_JUSTIFY_CENTER);
+  gtk_widget_add_css_class(attribution, "caption");
+  SetMarginAll(attribution, 12);
+  gtk_box_append(GTK_BOX(content), attribution);
+  adw_toolbar_view_set_content(ADW_TOOLBAR_VIEW(toolbar), content);
   adw_dialog_set_child(dialog, toolbar);
   adw_dialog_present(dialog, GTK_WIDGET(m_window));
 }

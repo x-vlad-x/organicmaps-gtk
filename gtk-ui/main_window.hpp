@@ -102,6 +102,7 @@ private:
   GtkWidget * m_bottomMenu = nullptr;
   GtkWidget * m_topSlot = nullptr;
   GtkWidget * m_bottomSlot = nullptr;
+  GtkWidget * m_mapAttribution = nullptr;
   GtkWidget * m_downloadCard = nullptr;
   GtkWidget * m_downloadTitle = nullptr;
   GtkWidget * m_downloadButton = nullptr;

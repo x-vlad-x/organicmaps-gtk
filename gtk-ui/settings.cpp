@@ -324,16 +324,21 @@ void ShowLayersDialog(MainWindow & window)
 void ShowAboutDialog(MainWindow & window)
 {
   auto * about = adw_about_dialog_new();
-  adw_about_dialog_set_application_name(ADW_ABOUT_DIALOG(about), "Organic Maps");
+  adw_about_dialog_set_application_name(ADW_ABOUT_DIALOG(about), "Organic Maps (GTK)");
   adw_about_dialog_set_application_icon(ADW_ABOUT_DIALOG(about), kAppId);
-  adw_about_dialog_set_version(ADW_ABOUT_DIALOG(about), GetPlatform().Version().c_str());
-  adw_about_dialog_set_developer_name(ADW_ABOUT_DIALOG(about), "Organic Maps contributors");
-  adw_about_dialog_set_website(ADW_ABOUT_DIALOG(about), "https://organicmaps.app");
+  adw_about_dialog_set_version(ADW_ABOUT_DIALOG(about), OMGTK_VERSION);
+  adw_about_dialog_set_developer_name(ADW_ABOUT_DIALOG(about), "Vladislav Shadiuk");
+  adw_about_dialog_set_website(ADW_ABOUT_DIALOG(about), kProjectUrl);
+  adw_about_dialog_add_link(ADW_ABOUT_DIALOG(about), "Organic Maps Project", "https://organicmaps.app");
   adw_about_dialog_set_issue_url(ADW_ABOUT_DIALOG(about), (std::string(kProjectUrl) + "/issues").c_str());
   adw_about_dialog_set_license_type(ADW_ABOUT_DIALOG(about), GTK_LICENSE_APACHE_2_0);
   auto const dataVersion = std::to_string(GetFramework().GetCurrentDataVersion());
   adw_about_dialog_set_comments(ADW_ABOUT_DIALOG(about),
-                                (T("about_headline") + "\n\nOpenStreetMap: " + dataVersion).c_str());
+      (std::string("An unofficial GTK interface. Not affiliated with or endorsed by Organic Maps.\n\n") +
+       "Based on the <a href=\"https://organicmaps.app\">Organic Maps Project</a>\n" +
+       "Map data © <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> and " +
+       "<a href=\"https://organicmaps.app\">Organic Maps</a>\n\n" +
+       "Core: " + GetPlatform().Version() + "\nMap data: " + dataVersion).c_str());
   adw_about_dialog_add_legal_section(ADW_ABOUT_DIALOG(about), "OpenStreetMap", "© OpenStreetMap contributors",
                                      GTK_LICENSE_CUSTOM, "Map data is available under the Open Database License (ODbL).");
   adw_dialog_present(ADW_DIALOG(about), GTK_WIDGET(window.Window()));

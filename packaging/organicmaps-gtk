@@ -1,6 +1,11 @@
 #!/bin/sh
 # Organic Maps (GTK) launcher.
 APPDIR="$(dirname "$(readlink -f "$0")")"
+# The SSH bundle keeps this script beside bin/. System packages and AppDir install
+# it in PREFIX/bin and keep private resources in PREFIX/libexec/organicmaps-gtk.
+if [ ! -x "$APPDIR/bin/organicmaps-gtk" ]; then
+  APPDIR="$(cd "$APPDIR/../libexec/organicmaps-gtk" && pwd)" || exit 1
+fi
 DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 

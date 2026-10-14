@@ -18,6 +18,8 @@
 #include <clocale>
 #include <csignal>
 #include <cstdlib>
+#include <cstdio>
+#include <cstring>
 
 namespace
 {
@@ -76,6 +78,11 @@ void OnShutdown(GApplication *, gpointer)
 
 int main(int argc, char * argv[])
 {
+  if (argc == 2 && std::strcmp(argv[1], "--version") == 0)
+  {
+    std::puts(OMGTK_VERSION);
+    return 0;
+  }
   std::setlocale(LC_NUMERIC, "C");
 
   // The core posts its UI-thread tasks through Qt; Qt's GLib event dispatcher runs them from the

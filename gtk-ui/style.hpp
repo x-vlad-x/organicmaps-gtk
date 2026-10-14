@@ -23,6 +23,12 @@ button.map-button.following { color: var(--accent-color); }
 button.map-button.pending { color: alpha(var(--window-fg-color), 0.5); }
 
 .map-bottom { margin-bottom: 0; }
+.map-attribution {
+  background-color: alpha(var(--window-bg-color), 0.96);
+  color: var(--window-fg-color);
+  padding: 2px 6px;
+  border-radius: 6px 6px 0 0;
+}
 
 .bottom-menu {
   background-color: var(--window-bg-color);

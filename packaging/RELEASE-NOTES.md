@@ -1,45 +1,39 @@
-# Organic Maps (GTK) 0.1.0-preview4 — first preview
+# Organic Maps (GTK) 0.1.0-preview5 — RPM and two architectures
 
 An unofficial GTK interface for Organic Maps on Linux phones and desktops.
 
-## Downloads
+## Packages
 
-- **FuriOS phone / ARM64:** `organicmaps-gtk_0.1.0-preview4-1_arm64.deb`.
-- **Linux desktop / x86_64:** `OrganicMapsGtk-0.1.0-preview4-x86_64.AppImage`.
-- Installation and upgrade instructions: `README.md`.
+DEB, RPM and AppImage are built for both **x86_64** and **ARM64 (aarch64)**.
+Select the package matching your distribution and CPU; the phone's ARM64 package
+cannot run on an x86_64 computer. See `README.md` for installation commands.
 
-## Included in this preview
+- DEB: ARM64 for FuriOS; amd64 for Debian 13 and compatible systems.
+- RPM: native Fedora 44 builds for x86_64 and aarch64, with a rebuildable source RPM.
+- AppImage: x86_64 and aarch64, with glibc 2.41 or newer and OpenGL ES 3.
 
-- Offline maps, search, routing, bookmarks and map downloads based on Organic Maps.
-- A standard draggable window header on desktop.
-- Application icons at standard sizes and migration from the previous SSH launcher.
-- Persistent map-data attribution links on the map, in the menu and in About.
-- An independent interface version, license notices and corresponding source archives.
+## Changes
+
+- Native RPM packaging with automatic library dependencies and standard desktop icons.
+- A complete source RPM containing the interface, core, patches and recursive submodules.
+- Six package builds in GitHub Actions, with ARM64 RPM/AppImage built on native ARM runners.
+- Package installation checks in clean Debian/Fedora containers and AppImage startup
+  checks in separate Debian 13 runtime containers.
+- Architecture-specific library/plugin collection and pinned tools for both AppImages.
+- Corrected screenshot URLs in the previous preview's release description.
 
 ## Validation and limitations
 
-Earlier previews were tested on FuriOS: startup, street-level maps without internet,
-correct location and audible test speech. On CachyOS, startup, map rendering and
-main screens were checked in Wayland and X11; window dragging was also confirmed.
-These checks cover successive previews; the preview4 DEB has not yet been installed
-on the physical phone.
+The build pipeline verifies executable architecture, package version, installed icons,
+source provenance and corresponding component sources before preparing release files.
+Container checks cover package installation and startup. They do not establish GPS,
+hardware rendering or navigation support on every device or distribution.
 
-The voice sounds robotic; tone improvements are deferred. Navigation while moving,
-other distributions and RPM packages have not been separately tested.
-The AppImage requires glibc 2.41 or newer and OpenGL ES 3. Please report bugs through
-the project's GitHub Issues.
+Earlier phone builds were checked for startup, street maps without internet,
+correct location and audible speech. Desktop map rendering and main screens were
+checked in Wayland and X11. The synthesized voice still sounds robotic.
 
-## Sources and licenses
-
-The interface uses Apache-2.0. Libraries, voices, fonts and maps retain their own
-licenses; see `LICENSES.md` and the notices inside the packages.
-`OrganicMapsGtk-0.1.0-preview4-sources.tar.gz` contains the interface sources.
-`OrganicMapsGtk-0.1.0-preview4-corresponding-sources.tar.part*` supplies the component
-source archive in numbered parts. See `SOURCES.md` for download and reassembly
-instructions. It includes exact Debian source packages and AppImage runtime sources.
-Checksums are in `SHA256SUMS`.
-
-Based on the [Organic Maps Project](https://organicmaps.app).
-Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) and
-[Organic Maps](https://organicmaps.app).
-This is an independent unofficial port and does not claim affiliation or endorsement.
+This remains a prerelease. The interface is Apache-2.0; libraries, fonts, voices and
+map data retain their own licenses. See `LICENSES.md`, the package notices,
+`SOURCES.md` and `SHA256SUMS`. This is an independent unofficial port and does not
+claim affiliation with or endorsement by the Organic Maps Project.

@@ -7,13 +7,17 @@ import subprocess
 import sys
 
 
+def multiarch():
+    return subprocess.check_output(["dpkg-architecture", "-qDEB_HOST_MULTIARCH"], text=True).strip()
+
+
 def copy_tree(source, destination):
     if source.exists():
         shutil.copytree(source, destination, dirs_exist_ok=True)
 
 
 def prepare(stage):
-    lib = Path("/usr/lib/x86_64-linux-gnu")
+    lib = Path("/usr/lib") / multiarch()
     modules = stage / "usr/lib/gio/modules"
     modules.mkdir(parents=True, exist_ok=True)
     for name in ["libdconfsettings.so", "libgiognutls.so", "libgiolibproxy.so"]:
@@ -51,6 +55,7 @@ def licenses(stage):
     # Include plugins and resources as well as top-level libraries. A basename-only
     # search misses modules such as dconf and can attribute files to unrelated -dev packages.
     paths, names = {}, {}
+    triplet = multiarch()
     for listing in Path("/var/lib/dpkg/info").glob("*.list"):
         package = listing.name.removesuffix(".list")
         for name in listing.read_text().splitlines():
@@ -64,7 +69,7 @@ def licenses(stage):
         with path.open("rb") as stream:
             elf = stream.read(4) == b"\x7fELF"
         original = "/" + relative
-        candidates = paths.get(original) or paths.get(original.replace("/usr/lib/", "/usr/lib/x86_64-linux-gnu/", 1))
+        candidates = paths.get(original) or paths.get(original.replace("/usr/lib/", f"/usr/lib/{triplet}/", 1))
         if not candidates and elf:
             candidates = names.get(path.name)
         if not candidates and elf:

@@ -1,66 +1,78 @@
-# Installing the preview
+# Install Organic Maps (GTK) 0.1.0-preview5
 
-These are preview packages for **0.1.0-preview4**.
+Choose the format for your distribution and the architecture of your device.
+Run `uname -m` if unsure: `x86_64` means amd64; `aarch64` means ARM64.
+Close an already running version before upgrading. Maps, settings and bookmarks
+are kept in their existing XDG locations; uninstalling the package does not delete them.
 
-The map window has a standard draggable header. The packages include application
-icons at standard sizes, a migration command for the previous SSH launcher, and
-persistent links to Organic Maps and OpenStreetMap. Release assets also include
-licenses and the corresponding sources of bundled components.
+## DEB — Debian and FuriOS
 
-## FuriOS phone
-
-1. Copy `organicmaps-gtk_0.1.0-preview4-1_arm64.deb` to the phone.
-2. Close any running version of Organic Maps GTK.
-3. Open a terminal in the directory containing the file and run:
+For an ARM64 FuriOS phone:
 
 ```sh
-sudo apt install ./organicmaps-gtk_0.1.0-preview4-1_arm64.deb
+sudo apt install ./organicmaps-gtk_0.1.0-preview5-1_arm64.deb
 ```
 
-Open **Organic Maps (GTK)** from the application list. To launch the system
-package explicitly, run `/usr/bin/organicmaps-gtk`.
+For an x86_64 computer with Debian 13 or compatible libraries:
 
-If the previous SSH installation is still present, its user launcher may take
-precedence over the system launcher. Run this once **without sudo**:
+```sh
+sudo apt install ./organicmaps-gtk_0.1.0-preview5-1_amd64.deb
+```
+
+The package manager installs the required libraries, eSpeak and icon theme.
+Do not force installation if dependencies cannot be resolved.
+
+## RPM — Fedora 44
+
+On an x86_64 computer:
+
+```sh
+sudo dnf install ./organicmaps-gtk-0.1.0-preview5-1.fc44.x86_64.rpm
+```
+
+On an ARM64 device:
+
+```sh
+sudo dnf install ./organicmaps-gtk-0.1.0-preview5-1.fc44.aarch64.rpm
+```
+
+These are Fedora packages. Other RPM distributions require separate builds and testing.
+They are not signed yet; verify downloaded file hashes against `SHA256SUMS`.
+
+## AppImage — portable application bundle
+
+For x86_64:
+
+```sh
+chmod +x OrganicMapsGtk-0.1.0-preview5-x86_64.AppImage
+./OrganicMapsGtk-0.1.0-preview5-x86_64.AppImage
+```
+
+For ARM64, use `OrganicMapsGtk-0.1.0-preview5-aarch64.AppImage` in the same commands.
+The AppImage requires glibc 2.41 or newer and OpenGL ES 3. If FUSE is unavailable,
+add `--appimage-extract-and-run`. It includes eSpeak and application libraries;
+location services, the display server and graphics drivers are provided by the system.
+
+## Application menu and previous SSH installation
+
+Launch **Organic Maps (GTK)** from the application menu after installing DEB or RPM.
+If you previously installed over SSH, run this once as your normal user, without sudo:
 
 ```sh
 /usr/bin/organicmaps-gtk-migrate-launcher
 ```
 
-This backs up the recognized old launcher and makes the packaged launcher
-available. Maps, bookmarks, settings and the old application files are preserved.
-Repeating the command is harmless. Custom desktop entries are left unchanged
-with an explanatory message.
+It backs up only the recognized old per-user launcher so the system launcher becomes
+visible. It preserves custom launchers and does not delete maps, settings or bookmarks.
+Package installation itself never modifies users' home directories.
 
-If installation reports missing dependencies, include the error text in your
-bug report. Do not force installation with unresolved dependencies.
+## Verify downloads
 
-## Desktop
-
-Run `OrganicMapsGtk-0.1.0-preview4-x86_64.AppImage`. If necessary, make it executable:
+Download `SHA256SUMS` beside the packages and run:
 
 ```sh
-chmod +x OrganicMapsGtk-0.1.0-preview4-x86_64.AppImage
-./OrganicMapsGtk-0.1.0-preview4-x86_64.AppImage
+sha256sum --check --ignore-missing SHA256SUMS
 ```
 
-If FUSE mounting is unavailable, try:
-
-```sh
-./OrganicMapsGtk-0.1.0-preview4-x86_64.AppImage --appimage-extract-and-run
-```
-
-The AppImage requires glibc 2.41 or newer and OpenGL ES 3. Startup, map rendering,
-menus, About, the map downloader and clean shutdown were checked on CachyOS in
-Wayland and X11. Other distributions need separate testing.
-
-## Known limitations and feedback
-
-Earlier previews were tested on FuriOS and CachyOS. The phone checks confirmed
-street-level map display without internet, correct location and audible speech.
-The synthesized voice sounds robotic; improving its tone is deferred. Navigation
-while moving has not been separately checked. The preview4 DEB has not yet been
-installed on the physical phone.
-
-Report the action that failed, the package version and any error message in the
-project's GitHub Issues. RPM packages are not part of this preview.
+Corresponding-source parts and the source RPM are for developers; installers do not
+need them. See `SOURCES.md` and `LICENSES.md` for rebuilding and component licenses.

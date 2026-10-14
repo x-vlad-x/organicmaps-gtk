@@ -4,7 +4,15 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 TARGET="${1:-all}"
-case "$TARGET" in phone|desktop|all) ;; *) echo "Usage: $0 [phone|desktop|all]" >&2; exit 2 ;; esac
+NATIVE="$(uname -m)"
+case "$NATIVE" in x86_64) ARCH=amd64 ;; aarch64) ARCH=arm64 ;; *) echo "Unsupported build host: $NATIVE" >&2; exit 2 ;; esac
+case "$TARGET" in
+  phone) TARGET=deb-arm64 ;;
+  desktop) TARGET=appimage-amd64 ;;
+  deb|appimage|rpm) TARGET="$TARGET-$ARCH" ;;
+  all|deb-amd64|deb-arm64|appimage-amd64|appimage-arm64|rpm-amd64|rpm-arm64) ;;
+  *) echo "Usage: $0 [all|deb|rpm|appimage|FORMAT-amd64|FORMAT-arm64|phone|desktop]" >&2; exit 2 ;;
+esac
 CORE_TAG=2026.09.29-32-android
 CORE_COMMIT=b20d1417eef1e3c63a447ac8658db4307a066024
 JOBS="${OMGTK_BUILD_JOBS:-8}"
@@ -44,11 +52,26 @@ build_target() {
   python3 tools/package.py "$target" --build-dir "$build" --container "$image"
 }
 
-if [[ "$TARGET" == phone || "$TARGET" == all ]]; then
-  build_target deb localhost/om-cross build-env/Containerfile build-aarch64 \
-    -DCMAKE_TOOLCHAIN_FILE=/src/build-env/aarch64-toolchain.cmake
-fi
-if [[ "$TARGET" == desktop || "$TARGET" == all ]]; then
-  build_target appimage localhost/om-desktop build-env/Containerfile.desktop build-appimage \
-    -DOMGTK_PHONE_GLIBC_COMPAT=OFF
+build_package() {
+  local target="$1" format="${1%-*}" arch="${1##*-}"
+  if [[ "$target" == deb-arm64 && "$ARCH" == amd64 ]]; then
+    build_target deb localhost/om-cross build-env/Containerfile build-aarch64 \
+      -DCMAKE_TOOLCHAIN_FILE=/src/build-env/aarch64-toolchain.cmake
+  elif [[ "$arch" != "$ARCH" ]]; then
+    echo "Build $target on a native $arch host (GitHub Actions supplies both architectures)." >&2
+    exit 2
+  elif [[ "$format" == rpm ]]; then
+    podman build -t localhost/om-rpm -f build-env/Containerfile.rpm build-env
+    python3 tools/package_rpm.py --container localhost/om-rpm --arch "$arch" --jobs "$JOBS"
+  else
+    local image=localhost/om-desktop build=build-appimage
+    if [[ "$arch" == arm64 ]]; then image=localhost/om-desktop-arm64; build=build-appimage-arm64; fi
+    build_target "$format" "$image" build-env/Containerfile.desktop "$build" \
+      -DOMGTK_PHONE_GLIBC_COMPAT=OFF
+  fi
+}
+if [[ "$TARGET" == all ]]; then
+  for format in deb appimage rpm; do build_package "$format-$ARCH"; done
+else
+  build_package "$TARGET"
 fi

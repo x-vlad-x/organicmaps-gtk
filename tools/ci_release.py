@@ -10,12 +10,11 @@ import subprocess
 import tarfile
 
 from prepare_release import digest
+from package_matrix import TARGETS, ARCHITECTURES, stage_path, package_name, srpm_name, validate_elf
 
 ROOT = Path(__file__).resolve().parents[1]
-STAGES = {
-    "phone": Path("out/packages/deb-arm64/root"),
-    "desktop": Path("out/packages/appimage-amd64/OrganicMapsGtk.AppDir"),
-}
+STAGES = {target: stage_path(target) for target in TARGETS}
+
 PRIVATE = Path("usr/libexec/organicmaps-gtk")
 DOC = Path("usr/share/doc/organicmaps-gtk")
 
@@ -53,36 +52,42 @@ def bundle(target):
     version = check()
     stage = STAGES[target]
     info = json.loads((ROOT / stage / PRIVATE / "build-info.json").read_text())
-    architecture = "arm64" if target == "phone" else "amd64"
+    kind, architecture = target.split("-", 1)
     if (info["project_commit"], info["project_dirty"], info["version"], info["architecture"]) != (
             run("git", "rev-parse", "HEAD"), False, version, architecture):
         raise ValueError("Package provenance does not match this build")
     binary = ROOT / stage / PRIVATE / "bin/organicmaps-gtk"
-    with binary.open("rb") as stream:
-        header = stream.read(20)
-    if header[:6] != b"\x7fELF\x02\x01" or int.from_bytes(header[18:20], "little") != (
-            183 if target == "phone" else 62):
-        raise ValueError("Wrong package executable architecture")
-    metadata = [stage / PRIVATE / "build-info.json", stage / DOC / "compiler-runtime/sources.json"]
+    validate_elf(binary, architecture)
+    metadata = [stage / PRIVATE / "build-info.json"]
+    if kind != "rpm":
+        metadata.append(stage / DOC / "compiler-runtime/sources.json")
     desktop = ROOT / stage / "usr/share/applications/io.github.x_vlad_x.OrganicMapsGtk.desktop"
     run("desktop-file-validate", str(desktop))
     for size in (48, 64, 128, 256, 512):
         icon = ROOT / stage / f"usr/share/icons/hicolor/{size}x{size}/apps/io.github.x_vlad_x.OrganicMapsGtk.png"
         if not icon.is_file():
             raise ValueError(f"Missing installed icon: {icon}")
-    if target == "phone":
-        package = Path(f"out/packages/organicmaps-gtk_{version}-1_arm64.deb")
+    package = Path("out/packages") / package_name(target, version)
+    if kind == "deb":
         fields = run("dpkg-deb", "-f", str(package), "Architecture", "Version", "Depends")
         if f"Version: {version.replace('-preview', '~preview')}-1" not in fields or (
-                "Architecture: arm64" not in fields or "espeak-ng" not in fields or "hicolor-icon-theme" not in fields):
+                f"Architecture: {architecture}" not in fields or "espeak-ng" not in fields or "hicolor-icon-theme" not in fields):
             raise ValueError("DEB version, architecture or required dependencies are incorrect")
-        sources = Path("out/corresponding-sources/compiler-arm64")
+    elif kind == "rpm":
+        fields = run("podman", "run", "--rm", "--network=none", "--userns=keep-id", "-v", f"{ROOT}:/src:ro",
+                     "localhost/om-rpm", "rpm", "-qp", "--qf", "%{ARCH}\\n%{VERSION}\\n%{REQUIRENAME}\\n",
+                     "/src/" + str(package))
+        if fields.splitlines()[:2] != [ARCHITECTURES[architecture], version.replace("-preview", "~preview")]:
+            raise ValueError("RPM architecture or version is incorrect")
     else:
-        package = Path(f"out/packages/OrganicMapsGtk-{version}-x86_64.AppImage")
         metadata.append(stage / DOC / "bundled/bundled-packages.json")
-        sources = Path("out/corresponding-sources/debian")
-    # The collector has verified these exact source files against signed APT indexes.
-    paths = [package, *metadata, *[p.relative_to(ROOT) for p in (ROOT / sources).iterdir() if p.is_file()]]
+    paths = [package, *metadata]
+    if kind == "rpm":
+        if architecture == "amd64":
+            paths.append(Path("out/packages") / srpm_name(version))
+    else:
+        sources = ROOT / "out/corresponding-sources" / target
+        paths.extend(p.relative_to(ROOT) for p in sources.iterdir() if p.is_file())
     write_tar(ROOT / "out/ci" / f"{target}.tar", paths)
 
 

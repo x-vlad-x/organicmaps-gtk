@@ -19,13 +19,16 @@ data-license rebranding clause; this preview does not perform that change.
 
 ## Software in the packages
 
-- The DEB dynamically uses distribution-provided GTK, libadwaita, Qt Core/Network,
+- The DEB and RPM dynamically use distribution-provided GTK, libadwaita, Qt Core/Network,
   GeoClue and eSpeak packages. Those dependencies are not embedded in the DEB.
 - The AppImage includes these libraries and a separate eSpeak NG executable.
   They retain their own licenses, including LGPL and GPL. This is not a statement
   that the whole AppImage is licensed under Apache-2.0.
-- The GCC C++ runtime is linked statically. Its notices, source package versions,
+- The DEB and AppImage link the GCC C++ runtime statically. Its notices, source package versions,
   Built-Using records and GCC Runtime Library Exception are supplied separately.
+- The Fedora RPM uses the system GCC runtime dynamically. The source RPM contains
+  the interface, patched Organic Maps core and all recursive submodule sources,
+  plus a spec file that rebuilds the package without downloading project sources.
 - The AppImage runtime has its own MIT license and bundled third-party notices,
   including the LGPL libfuse license. `runtime-sources.json` pins its source commit
   and the source archives for libfuse and squashfuse used by its build scripts.
@@ -42,6 +45,10 @@ upstream revision, and the corresponding-sources archive beside the binaries.
 The latter contains exact Debian `.dsc`, original source archives and Debian
 patches, retrieved using SHA-256 from signed APT metadata, plus AppImage runtime
 sources. The JSON inventories identify the source versions of the shipped files.
+
+For Fedora, install the spec's build dependencies and rebuild the source RPM with
+`rpmbuild --rebuild organicmaps-gtk-<version>-1.fc44.src.rpm`. The source RPM is
+shared by x86_64 and aarch64; build it natively on the target architecture.
 
 Use `dpkg-source -x package_version.dsc` to reconstruct a Debian source package.
 Its `debian/rules` and Debian build dependencies describe the distribution build.

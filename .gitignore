@@ -4,5 +4,6 @@
 /build-aarch64/
 /build-x86_64/
 /build-appimage/
+/build-appimage-arm64/
 /out/
 __pycache__/

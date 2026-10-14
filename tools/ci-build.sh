@@ -1,26 +1,50 @@
 #!/usr/bin/env bash
-# Build and verify one CI target; transfer only release inputs to the next job.
+# Build and verify one format/architecture pair before the release assembly job.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
-target="${1:?Usage: ci-build.sh phone|desktop}"
-case "$target" in phone|desktop) ;; *) exit 2 ;; esac
+target="${1:?Usage: ci-build.sh FORMAT-ARCH}"
+case "$target" in deb-amd64|deb-arm64|appimage-amd64|appimage-arm64|rpm-amd64|rpm-arm64) ;; *) exit 2 ;; esac
 ./tools/build-packages.sh "$target"
-if [[ "$target" == phone ]]; then
-  python3 tools/collect_debian_sources.py \
-    out/packages/deb-arm64/root/usr/share/doc/organicmaps-gtk/compiler-runtime/sources.json \
-    --container localhost/om-cross --output out/corresponding-sources/compiler-arm64
-else
-  python3 tools/collect_debian_sources.py \
-    out/packages/appimage-amd64/OrganicMapsGtk.AppDir/usr/share/doc/organicmaps-gtk/bundled/bundled-packages.json \
-    out/packages/appimage-amd64/OrganicMapsGtk.AppDir/usr/share/doc/organicmaps-gtk/compiler-runtime/sources.json \
-    --container localhost/om-desktop
-  # Test on Debian 13 with system graphics/font libraries, without GTK/Qt development packages.
+kind="${target%-*}"
+arch="${target##*-}"
+version="$(cat VERSION)"
+if [[ "$kind" != rpm ]]; then
+  image=localhost/om-desktop
+  if [[ "$arch" == arm64 ]]; then
+    if [[ "$kind" == deb ]]; then image=localhost/om-cross; else image=localhost/om-desktop-arm64; fi
+  fi
+  stage="out/packages/$target/root"
+  inventories=()
+  if [[ "$kind" == appimage ]]; then
+    stage="out/packages/$target/OrganicMapsGtk.AppDir"
+    inventories+=("$stage/usr/share/doc/organicmaps-gtk/bundled/bundled-packages.json")
+  fi
+  inventories+=("$stage/usr/share/doc/organicmaps-gtk/compiler-runtime/sources.json")
+  python3 tools/collect_debian_sources.py "${inventories[@]}" --container "$image" \
+    --output "out/corresponding-sources/$target"
+fi
+if [[ "$kind" == appimage ]]; then
   podman build -t localhost/om-smoke -f build-env/Containerfile.smoke build-env
-  version="$(cat VERSION)"
+  machine=x86_64
+  [[ "$arch" != arm64 ]] || machine=aarch64
   actual="$(podman run --rm --network=none --userns=keep-id -v "$PWD:/src:ro" -w /src \
     -e XDG_DATA_HOME=/tmp/test-data -e XDG_CONFIG_HOME=/tmp/test-config \
-    localhost/om-smoke "/src/out/packages/OrganicMapsGtk-$version-x86_64.AppImage" \
+    localhost/om-smoke "/src/out/packages/OrganicMapsGtk-$version-$machine.AppImage" \
     --appimage-extract-and-run --version)"
   [[ "$actual" == "$version" ]]
+elif [[ "$kind" == rpm ]]; then
+  machine="$(uname -m)"
+  podman run --rm -v "$PWD:/src:ro" registry.fedoraproject.org/fedora:44 sh -ec '
+    dnf -y --setopt=install_weak_deps=False install "$1"
+    test "$(/usr/bin/organicmaps-gtk --version)" = "$2"
+    rpm -V organicmaps-gtk
+  ' sh "/src/out/packages/organicmaps-gtk-$version-1.fc44.$machine.rpm" "$version"
+elif [[ "$arch" == amd64 ]]; then
+  podman run --rm -v "$PWD:/src:ro" docker.io/library/debian:trixie sh -ec '
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "$1"
+    test "$(/usr/bin/organicmaps-gtk --version)" = "$2"
+    dpkg -V organicmaps-gtk
+  ' sh "/src/out/packages/organicmaps-gtk_$version-1_amd64.deb" "$version"
 fi
 python3 tools/ci_release.py bundle "$target"

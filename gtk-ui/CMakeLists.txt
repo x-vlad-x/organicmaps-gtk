@@ -37,6 +37,10 @@ target_compile_options(organicmaps-gtk PRIVATE -Wno-missing-field-initializers -
 target_link_libraries(organicmaps-gtk PRIVATE map PkgConfig::GTK_APP_DEPS)
 # The core links its own static FreeType and HarfBuzz: don't export them, or they override the system
 # ones Pango/cairo use (this build of FreeType has no PNG support, so color emoji disappear).
-target_link_options(organicmaps-gtk PRIVATE -static-libstdc++ -static-libgcc -Wl,--exclude-libs,ALL)
+option(OMGTK_STATIC_COMPILER_RUNTIME "Link the compiler runtime statically" ON)
+if (OMGTK_STATIC_COMPILER_RUNTIME)
+  target_link_options(organicmaps-gtk PRIVATE -static-libstdc++ -static-libgcc)
+endif()
+target_link_options(organicmaps-gtk PRIVATE -Wl,--exclude-libs,ALL)
 
 include("${OMGTK_ROOT}/packaging/install.cmake")

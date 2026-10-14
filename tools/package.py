@@ -57,11 +57,14 @@ def project_state():
     return metadata["commit"], False
 
 
-def download_tools():
+def download_tools(architecture="amd64"):
     directory = ROOT / "out/tools"
     directory.mkdir(parents=True, exist_ok=True)
     tools = json.loads((ROOT / "packaging/appimage-tools.json").read_text())
+    machine = {"amd64": "x86_64", "arm64": "aarch64"}[architecture]
     for name, source in tools.items():
+        if machine not in name:
+            continue
         path = directory / name
         if not path.exists():
             temporary = path.with_suffix(path.suffix + ".download")
@@ -128,7 +131,7 @@ def build_deb(args, stage, architecture, version):
         "Recommends: geoclue-2.0, iio-sensor-proxy\n"
         "Homepage: https://github.com/x-vlad-x/organicmaps-gtk\n"
         "Description: Unofficial GTK interface for offline maps and navigation\n"
-        " Local preview for Linux phones. Based on the Organic Maps Project.\n"
+        " Offline maps for Linux phones and desktops. Based on the Organic Maps Project.\n"
         " Includes offline search, routing, bookmarks and downloadable maps.\n")
     copyright_file = stage / "usr/share/doc/organicmaps-gtk/copyright"
     copyright_file.write_text(
@@ -152,15 +155,14 @@ def appimage_resources(args, stage):
 
 
 def build_appimage(args, stage, architecture, version):
-    if architecture != "amd64":
-        raise RuntimeError("This preview AppImage recipe targets x86_64 only")
-    tools = download_tools()
+    machine = {"amd64": "x86_64", "arm64": "aarch64"}[architecture]
+    tools = download_tools(architecture)
     shutil.copytree(ROOT / "packaging/licenses/appimage-runtime",
                     stage / "usr/share/doc/organicmaps-gtk/appimage-runtime", dirs_exist_ok=True)
     appimage_resources(args, stage)
     desktop = stage / f"usr/share/applications/{APP_ID}.desktop"
     execute(args, ["desktop-file-validate", inside(args, desktop)])
-    execute(args, [inside(args, tools / "linuxdeploy-x86_64.AppImage"), "--appimage-extract-and-run",
+    execute(args, [inside(args, tools / f"linuxdeploy-{machine}.AppImage"), "--appimage-extract-and-run",
                    "--appdir", inside(args, stage), "--deploy-deps-only", inside(args, stage / "usr"),
                    "--deploy-deps-only", inside(args, stage / PRIVATE / "bin/organicmaps-gtk"),
                    "--desktop-file", inside(args, desktop), "--icon-file",
@@ -171,9 +173,9 @@ def build_appimage(args, stage, architecture, version):
             raise RuntimeError(f"AppImage is missing a required application library: {library}")
     # Include distro license files and an inventory for bundled dynamic libraries.
     execute(args, ["python3", inside(args, ROOT / "tools/prepare_appimage.py"), inside(args, stage), "--licenses"])
-    output = ROOT / "out/packages" / f"OrganicMapsGtk-{version}-x86_64.AppImage"
-    execute(args, ["env", "ARCH=x86_64", inside(args, tools / "appimagetool-x86_64.AppImage"),
-                   "--appimage-extract-and-run", "--no-appstream", "--runtime-file", inside(args, tools / "runtime-x86_64"),
+    output = ROOT / "out/packages" / f"OrganicMapsGtk-{version}-{machine}.AppImage"
+    execute(args, ["env", f"ARCH={machine}", inside(args, tools / f"appimagetool-{machine}.AppImage"),
+                   "--appimage-extract-and-run", "--no-appstream", "--runtime-file", inside(args, tools / f"runtime-{machine}"),
                    inside(args, stage), inside(args, output)])
     return output
 

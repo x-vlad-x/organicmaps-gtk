@@ -14,7 +14,7 @@ package dependencies and supported versions are documented in [packaging/README.
 | Phone · ARM64 | [DEB package](https://github.com/x-vlad-x/organicmaps-gtk/releases/download/v0.1.0-preview4/organicmaps-gtk_0.1.0-preview4-1_arm64.deb) | FuriOS / FuriLabs FLX1s |
 | Desktop · x86_64 | [AppImage](https://github.com/x-vlad-x/organicmaps-gtk/releases/download/v0.1.0-preview4/OrganicMapsGtk-0.1.0-preview4-x86_64.AppImage) | CachyOS · Wayland & X11 |
 
-See the [installation instructions](packaging/INSTALL.md) and
+See the [installation instructions](https://github.com/x-vlad-x/organicmaps-gtk/blob/d17a4f5f6a54b3b03e5e351279d73bf0a9e31470/packaging/INSTALL.md) and
 [release notes](https://github.com/x-vlad-x/organicmaps-gtk/releases/tag/v0.1.0-preview4)
 for requirements, checksums and preview limitations. The AppImage requires glibc 2.41 or newer
 and OpenGL ES 3. Sources and license notices are available with the release.
@@ -53,8 +53,10 @@ locale.
 
 ## Building and installing
 
-Build recipes for `.deb` (ARM64 phone) and AppImage (x86_64 desktop), including source
-collection and release preparation, are described in [packaging/README.md](packaging/README.md).
+Development builds provide DEB, RPM and AppImage for both x86_64 and ARM64.
+Build recipes, source collection and release preparation are described in
+[packaging/README.md](packaging/README.md). These builds are separate from the
+published preview linked above.
 The original SSH installation method remains available below.
 
 Requirements on the build machine (x86_64 Linux): git, podman, ImageMagick, rsync, python3, ssh.

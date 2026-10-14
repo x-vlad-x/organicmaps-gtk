@@ -1,0 +1,5 @@
+FROM registry.fedoraproject.org/fedora:44
+RUN dnf -y install gcc-c++ cmake ninja-build pkgconf-pkg-config python3 git \
+    gtk4-devel libadwaita-devel geoclue2-devel qt6-qtbase-devel \
+    libglvnd-devel libepoxy-devel ImageMagick rpm-build cpio desktop-file-utils \
+    && dnf clean all

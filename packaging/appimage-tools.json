@@ -11,5 +11,18 @@
     "url": "https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64",
     "sha256": "156f4bdbde9c52d01814600013e0a273f0118dc2de98975f3c8c63427ec79074",
     "source_commit": "8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa"
+  },
+  "linuxdeploy-aarch64.AppImage": {
+    "url": "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-aarch64.AppImage",
+    "sha256": "5c1fddf96066891e829831cac0d84424690f3b22846c7f8f1bb9990a5c6c73f4"
+  },
+  "appimagetool-aarch64.AppImage": {
+    "url": "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-aarch64.AppImage",
+    "sha256": "a595ea34cd6136c7f595e9dcbb16f3e9725d7610efb9e43b38c3c6e86cafc270"
+  },
+  "runtime-aarch64": {
+    "url": "https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-aarch64",
+    "sha256": "b4ff0030242d0c3bb12ce40541828303cf167493f4793456f0436edd6255c39d",
+    "source_commit": "8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa"
   }
 }

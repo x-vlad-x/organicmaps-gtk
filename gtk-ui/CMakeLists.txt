@@ -43,4 +43,14 @@ if (OMGTK_STATIC_COMPILER_RUNTIME)
 endif()
 target_link_options(organicmaps-gtk PRIVATE -Wl,--exclude-libs,ALL)
 
+# Preserve the pinned core's version when rebuilding an RPM source archive without Git.
+set(OMGTK_CORE_QT_VERSION "" CACHE STRING "Core version recorded by the source archive")
+set(OMGTK_CORE_INT_VERSION "" CACHE STRING "Core integer version recorded by the source archive")
+if (OMGTK_CORE_QT_VERSION AND OMGTK_CORE_INT_VERSION MATCHES "^[0-9]+$")
+  set(OM_VERSION "${OMGTK_CORE_QT_VERSION}")
+  set(OM_INT_VERSION "${OMGTK_CORE_INT_VERSION}")
+  configure_file("${CMAKE_SOURCE_DIR}/libs/platform/platform_qt_version.cpp.in"
+    "${CMAKE_BINARY_DIR}/libs/platform/platform_qt_version.cpp" @ONLY)
+endif()
+
 include("${OMGTK_ROOT}/packaging/install.cmake")

@@ -24,6 +24,8 @@ def full_sources(destination):
     core_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=core, text=True).strip()
     upstream = subprocess.check_output(["git", "ls-files", "--recurse-submodules", "-z"], cwd=core).decode().split("\0")
     metadata = dict(commit=commit, dirty=dirty, core_commit=core_commit,
+                    core_qt_version=subprocess.check_output(["bash", "tools/unix/version.sh", "qt_version"], cwd=core, text=True).strip(),
+                    core_int_version=subprocess.check_output(["bash", "tools/unix/version.sh", "qt_int_version"], cwd=core, text=True).strip(),
                     files={name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in names})
     prefix = f"OrganicMapsGtk-{version}"
     with tarfile.open(destination, "w:gz", compresslevel=2) as archive:
@@ -46,6 +48,9 @@ def main():
     args = parser.parse_args()
     version = (ROOT / "VERSION").read_text().strip()
     workspace = ROOT / "out/rpm" / args.arch
+    for name in ("RPMS", "SRPMS"):
+        if (workspace / name).exists():
+            shutil.rmtree(workspace / name)
     sources = workspace / "SOURCES"
     sources.mkdir(parents=True, exist_ok=True)
     full_sources(sources / f"OrganicMapsGtk-{version}-full-sources.tar.gz")
@@ -73,7 +78,7 @@ def main():
     stage.mkdir(parents=True)
     # Extract our own completed package, so CI validates the exact shipped contents.
     execute(["python3", "-c", "import subprocess,sys; p=subprocess.Popen(['rpm2cpio',sys.argv[1]],stdout=subprocess.PIPE); "
-             "subprocess.run(['cpio','-idm','--quiet'],cwd=sys.argv[2],stdin=p.stdout,check=True); "
+             "subprocess.run(['cpio','-idm','--quiet','--no-preserve-owner'],cwd=sys.argv[2],stdin=p.stdout,check=True); "
              "p.stdout.close(); sys.exit(p.wait())", container_path(output), container_path(stage)])
     if args.arch == "amd64":
         source_rpms = list((workspace / "SRPMS").glob("*.src.rpm"))

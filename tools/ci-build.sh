@@ -18,6 +18,7 @@ else
   podman build -t localhost/om-smoke -f build-env/Containerfile.smoke build-env
   version="$(cat VERSION)"
   actual="$(podman run --rm --network=none --userns=keep-id -v "$PWD:/src:ro" -w /src \
+    -e XDG_DATA_HOME=/tmp/test-data -e XDG_CONFIG_HOME=/tmp/test-config \
     localhost/om-smoke "/src/out/packages/OrganicMapsGtk-$version-x86_64.AppImage" \
     --appimage-extract-and-run --version)"
   [[ "$actual" == "$version" ]]

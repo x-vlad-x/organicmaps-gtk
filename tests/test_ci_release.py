@@ -64,6 +64,13 @@ class CiReleaseTest(unittest.TestCase):
             self.assertEqual(extracted.read_bytes(), b"test")
             self.assertTrue(extracted.stat().st_mode & 0o111)
 
+    def test_existing_release_is_never_modified(self):
+        with patch.object(ci_release, "extract"), patch.object(ci_release, "release_assets", return_value=[]), \
+                patch.object(ci_release, "run", return_value='[{"tagName":"v0.1.0-preview4"}]') as command:
+            with self.assertRaisesRegex(ValueError, "already exists"):
+                ci_release.draft("0.1.0-preview4")
+            command.assert_called_once_with("gh", "release", "list", "--limit", "1000", "--json", "tagName")
+
 
 if __name__ == "__main__":
     unittest.main()

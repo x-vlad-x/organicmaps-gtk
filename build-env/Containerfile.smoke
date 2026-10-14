@@ -1,0 +1,6 @@
+# Runtime baseline only: no GTK, Qt, GeoClue or eSpeak packages from the build image.
+FROM docker.io/library/debian:trixie
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    libopengl0 libgl1 libegl1 libgles2 libfribidi0 libharfbuzz0b libfontconfig1 \
+    libx11-6 libwayland-client0 libfreetype6 libcom-err2 libgmp10 libstdc++6 zlib1g \
+    && rm -rf /var/lib/apt/lists/*

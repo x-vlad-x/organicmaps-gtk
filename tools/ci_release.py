@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+"""Validate and transfer release inputs between CI jobs; create drafts for tags."""
+import argparse
+from concurrent.futures import ThreadPoolExecutor
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import tarfile
+
+from prepare_release import digest
+
+ROOT = Path(__file__).resolve().parents[1]
+STAGES = {
+    "phone": Path("out/packages/deb-arm64/root"),
+    "desktop": Path("out/packages/appimage-amd64/OrganicMapsGtk.AppDir"),
+}
+PRIVATE = Path("usr/libexec/organicmaps-gtk")
+DOC = Path("usr/share/doc/organicmaps-gtk")
+
+
+def run(*args):
+    return subprocess.check_output(args, cwd=ROOT, text=True).strip()
+
+
+def check_version(version, ref):
+    if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:-preview[1-9][0-9]*)?", version):
+        raise ValueError(f"Unsupported release version: {version}")
+    if ref.startswith("refs/tags/") and ref != f"refs/tags/v{version}":
+        raise ValueError(f"Tag {ref} does not match VERSION {version}")
+
+
+def check():
+    version = (ROOT / "VERSION").read_text().strip()
+    check_version(version, os.environ.get("GITHUB_REF", ""))
+    notes = (ROOT / "packaging/RELEASE-NOTES.md").read_text()
+    if not notes.splitlines()[0].startswith(f"# Organic Maps (GTK) {version} "):
+        raise ValueError("Update RELEASE-NOTES.md for VERSION before building a release")
+    if run("git", "status", "--porcelain"):
+        raise ValueError("Build only from a clean source commit")
+    return version
+
+
+def write_tar(destination, paths):
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(destination, "w") as archive:
+        for path in sorted(set(paths)):
+            archive.add(ROOT / path, arcname=str(path), recursive=False)
+
+
+def bundle(target):
+    version = check()
+    stage = STAGES[target]
+    info = json.loads((ROOT / stage / PRIVATE / "build-info.json").read_text())
+    architecture = "arm64" if target == "phone" else "amd64"
+    if (info["project_commit"], info["project_dirty"], info["version"], info["architecture"]) != (
+            run("git", "rev-parse", "HEAD"), False, version, architecture):
+        raise ValueError("Package provenance does not match this build")
+    binary = ROOT / stage / PRIVATE / "bin/organicmaps-gtk"
+    with binary.open("rb") as stream:
+        header = stream.read(20)
+    if header[:6] != b"\x7fELF\x02\x01" or int.from_bytes(header[18:20], "little") != (
+            183 if target == "phone" else 62):
+        raise ValueError("Wrong package executable architecture")
+    metadata = [stage / PRIVATE / "build-info.json", stage / DOC / "compiler-runtime/sources.json"]
+    desktop = ROOT / stage / "usr/share/applications/io.github.x_vlad_x.OrganicMapsGtk.desktop"
+    run("desktop-file-validate", str(desktop))
+    for size in (48, 64, 128, 256, 512):
+        icon = ROOT / stage / f"usr/share/icons/hicolor/{size}x{size}/apps/io.github.x_vlad_x.OrganicMapsGtk.png"
+        if not icon.is_file():
+            raise ValueError(f"Missing installed icon: {icon}")
+    if target == "phone":
+        package = Path(f"out/packages/organicmaps-gtk_{version}-1_arm64.deb")
+        fields = run("dpkg-deb", "-f", str(package), "Architecture", "Version", "Depends")
+        if f"Version: {version.replace('-preview', '~preview')}-1" not in fields or (
+                "Architecture: arm64" not in fields or "espeak-ng" not in fields or "hicolor-icon-theme" not in fields):
+            raise ValueError("DEB version, architecture or required dependencies are incorrect")
+        sources = Path("out/corresponding-sources/compiler-arm64")
+    else:
+        package = Path(f"out/packages/OrganicMapsGtk-{version}-x86_64.AppImage")
+        metadata.append(stage / DOC / "bundled/bundled-packages.json")
+        sources = Path("out/corresponding-sources/debian")
+    # The collector has verified these exact source files against signed APT indexes.
+    paths = [package, *metadata, *[p.relative_to(ROOT) for p in (ROOT / sources).iterdir() if p.is_file()]]
+    write_tar(ROOT / "out/ci" / f"{target}.tar", paths)
+
+
+def extract(path):
+    with tarfile.open(path) as archive:
+        members = archive.getmembers()
+        # Handoffs contain regular files only, under ignored build output paths.
+        for member in members:
+            name = Path(member.name)
+            if not member.isfile() or name.is_absolute() or ".." in name.parts or name.parts[:1] != ("out",):
+                raise ValueError(f"Invalid CI archive member: {member.name}")
+        archive.extractall(ROOT, filter="data")
+
+
+def release_assets(directory):
+    assets = []
+    for line in (directory / "SHA256SUMS").read_text().splitlines():
+        checksum, name = line.split("  ", 1)
+        if not re.fullmatch(r"[a-f0-9]{64}", checksum) or Path(name).name != name or name in (".", ".."):
+            raise ValueError(f"Invalid release checksum entry: {line}")
+        path = directory / name
+        if path in assets or not path.is_file() or digest(path) != checksum:
+            raise ValueError(f"Invalid or duplicate release asset: {name}")
+        assets.append(path)
+    if not assets:
+        raise ValueError("Release asset list is empty")
+    return [*assets, directory / "SHA256SUMS"]
+
+
+def draft(version):
+    extract(ROOT / "out/ci/release-files.tar")
+    directory = ROOT / "out/release" / version
+    assets = release_assets(directory)
+    tag = f"v{version}"
+    existing = json.loads(run("gh", "release", "list", "--limit", "1000", "--json", "tagName"))
+    if any(item["tagName"] == tag for item in existing):
+        raise ValueError("A release already exists for this tag; it will not be changed")
+    args = ["gh", "release", "create", tag, "--draft", "--verify-tag", "--latest=false",
+            "--title", f"Organic Maps (GTK) {version}", "--notes-file", "packaging/RELEASE-NOTES.md"]
+    if "-preview" in version:
+        args.append("--prerelease")
+    print(run(*args), flush=True)
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        list(pool.map(lambda path: run("gh", "release", "upload", tag, str(path)), assets))
+    remote = json.loads(run("gh", "release", "view", tag, "--json", "assets"))["assets"]
+    expected = {path.name: (path.stat().st_size, "sha256:" + digest(path)) for path in assets}
+    actual = {item["name"]: (item["size"], item["digest"]) for item in remote}
+    if actual != expected:
+        raise ValueError("Uploaded assets failed server size/checksum verification; keep the release as a draft")
+    print("Verified draft release. Review and publish it when ready.")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("command", choices=("check", "bundle", "unpack", "verify", "draft"))
+    parser.add_argument("target", nargs="?", choices=STAGES)
+    args = parser.parse_args()
+    version = check()
+    if args.command == "bundle":
+        if not args.target:
+            parser.error("bundle requires a target")
+        bundle(args.target)
+    elif args.command == "unpack":
+        for target in STAGES:
+            extract(ROOT / "out/ci" / f"{target}.tar")
+    elif args.command == "verify":
+        files = release_assets(ROOT / "out/release" / version)
+        write_tar(ROOT / "out/ci/release-files.tar", [p.relative_to(ROOT) for p in files])
+        print(f"Verified {len(files)} release assets")
+    elif args.command == "draft":
+        draft(version)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,14 +1,14 @@
-# Local preview packages
+# Preview packages and release builds
 
-These recipes create **local previews**, not a public release. The current name
-and upstream icon are retained while branding and map-data redistribution are
-reviewed. No package is uploaded, installed on the host, or copied to a phone
-by these scripts.
+The local recipes build packages without uploading them, installing them on the
+host or copying them to a phone. GitHub Actions can also build the same packages
+and prepare a draft release. The unofficial Organic Maps name and upstream icon
+are retained, with attribution and component notices included in the packages.
 
 ## Build
 
 On an x86_64 Linux build machine, install Podman, Git, Python 3 and ImageMagick
-(`magick`), then run from the project root:
+(`magick` or ImageMagick 6 `convert`), then run from the project root:
 
 ```sh
 ./tools/build-packages.sh          # ARM64 .deb and x86_64 AppImage
@@ -123,9 +123,9 @@ and file arguments containing spaces.
 Each staged package includes `build-info.json` with the project/core revisions,
 architecture and dirty-state marker. The phone .deb dependencies are generated
 using `dpkg-shlibdeps` inside its build container. The AppImage includes a Debian
-package inventory and copyright files for bundled libraries. Before any public
-release, finish the license/source-distribution review for the bundled software,
-especially eSpeak and other copyleft components, and resolve branding/data terms.
+package inventory and copyright files for bundled libraries. Release preparation
+requires the corresponding sources for every bundled-library and compiler-runtime
+inventory. Review licensing and branding again when adding or replacing components.
 
 The `--version` option returns the GTK interface version from the root `VERSION`
 file without opening a window. About also shows the core and map-data versions.
@@ -165,3 +165,39 @@ parts in parallel. Installers do not need these source files.
 The GTK source archive includes `SOURCE-REVISION.json`, which lets packaging
 verify source provenance when `.git` is absent. Building the archive still needs
 network access to fetch the pinned core and the documented build dependencies.
+
+## GitHub Actions
+
+[Checks](../.github/workflows/checks.yml) runs the packaging tests and validates
+scripts and desktop metadata on pushes to `main` and pull requests.
+[Packages](../.github/workflows/packages.yml) builds the ARM64 DEB and x86_64
+AppImage in separate Ubuntu 24.04 jobs using the same Podman recipes as local
+builds. Each job collects exact corresponding sources before transferring its
+installers and manifests to the assembly job. The AppImage also runs `--version`
+without FUSE or a display in a Debian 13 container with runtime graphics/font
+libraries, without the build image's GTK, Qt and GeoClue packages. This checks
+startup and library resolution; it does not replace interactive or device tests.
+
+To test the full pipeline without creating a release, open **Actions → Packages →
+Run workflow** on GitHub. The `release-files` artifact contains a tar archive of
+the installers, source parts, instructions, inventories and checksums. Intermediate
+artifacts are kept for 7 days; the assembled artifact is kept for 14 days.
+
+For a new version:
+
+1. Update `VERSION`, `packaging/RELEASE-NOTES.md` and versioned installation examples.
+2. Commit the changes and create a tag named exactly `v<VERSION>` on that commit.
+3. Push the tag. Both builds must pass before a draft release is created.
+4. Review the draft's notes and files, then publish it. Preview versions are
+   automatically marked as prereleases; stable releases can be marked latest
+   when published.
+
+The workflow verifies uploaded asset sizes and SHA-256 digests. It refuses to
+change an existing release, including an incomplete draft. If a first upload
+fails, inspect that draft and remove it before rerunning the failed draft job.
+Manual runs only produce artifacts, even when run against a tag. The existing
+published preview is never rebuilt or replaced by a test run.
+
+Only the draft job has repository write access. Dependencies are obtained from
+the documented Debian repositories; changes there can require maintenance. The
+workflow fails if a pinned tool changes or exact component sources disappear.

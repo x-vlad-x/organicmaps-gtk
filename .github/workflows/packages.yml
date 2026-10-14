@@ -1,0 +1,102 @@
+name: Packages
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: packages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [phone, desktop]
+    env:
+      OMGTK_BUILD_JOBS: '4'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate release version and run tests
+        run: |
+          python3 tools/ci_release.py check
+          python3 -m unittest discover -s tests -v
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman uidmap slirp4netns imagemagick desktop-file-utils
+          podman info
+          df -h .
+      - name: Build, check and collect corresponding sources
+        env:
+          BUILD_TARGET: ${{ matrix.target }}
+        run: ./tools/ci-build.sh "$BUILD_TARGET"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: package-${{ matrix.target }}
+          path: out/ci/${{ matrix.target }}.tar
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  assemble:
+    name: Assemble release files
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: package-*
+          path: out/ci
+          merge-multiple: true
+      - name: Assemble and verify release
+        run: |
+          python3 tools/ci_release.py unpack
+          python3 tools/prepare_release.py
+          python3 tools/ci_release.py verify
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-files
+          path: out/ci/release-files.tar
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+      - name: Write run summary
+        run: |
+          echo 'Both packages and all corresponding sources passed verification.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Download release-files to obtain installers, sources, notices and SHA256SUMS.' >> "$GITHUB_STEP_SUMMARY"
+
+  draft:
+    name: Create draft release
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: assemble
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-files
+          path: out/ci
+      - name: Upload verified assets to a new draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/ci_release.py draft

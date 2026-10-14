@@ -8,9 +8,11 @@ case "$TARGET" in phone|desktop|all) ;; *) echo "Usage: $0 [phone|desktop|all]" 
 CORE_TAG=2026.09.29-32-android
 CORE_COMMIT=b20d1417eef1e3c63a447ac8658db4307a066024
 JOBS="${OMGTK_BUILD_JOBS:-8}"
-for tool in podman git python3 magick; do
+for tool in podman git python3; do
   command -v "$tool" >/dev/null || { echo "Required tool is missing: $tool" >&2; exit 1; }
 done
+MAGICK="$(command -v magick || command -v convert || true)"
+[[ -n "$MAGICK" ]] || { echo "Required tool is missing: ImageMagick (magick or convert)" >&2; exit 1; }
 if [[ ! -d organicmaps/.git ]]; then
   git clone --depth 1 --branch "$CORE_TAG" https://github.com/organicmaps/organicmaps.git organicmaps
 fi
@@ -27,7 +29,7 @@ for patch in "$ROOT"/patches/*.patch; do
   git -C organicmaps apply "$patch"
 done
 mkdir -p out
-python3 tools/prepare_package_assets.py organicmaps out/package-icons "$(command -v magick)"
+python3 tools/prepare_package_assets.py organicmaps out/package-icons "$MAGICK"
 
 build_target() {
   local target="$1" image="$2" recipe="$3" build="$4"

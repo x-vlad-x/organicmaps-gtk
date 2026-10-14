@@ -25,7 +25,7 @@ namespace
 {
 void OnStartup(GApplication *, gpointer)
 {
-  using namespace omgtk;
+  using namespace lichen;
   // gtk_init() resets the locale; the core parses doubles with a dot.
   std::setlocale(LC_NUMERIC, "C");
 
@@ -47,19 +47,19 @@ void OnStartup(GApplication *, gpointer)
 
   GetApp().window = new MainWindow(GetApp().application);
   // Remote control for automated testing, only when explicitly requested.
-  if (g_getenv("OMGTK_DEBUG"))
+  if (g_getenv("LICHEN_DEBUG"))
     RegisterDebugActions(*GetApp().window, G_APPLICATION(GetApp().application));
 }
 
 void OnActivate(GApplication *, gpointer)
 {
-  if (auto * w = omgtk::GetApp().window)
+  if (auto * w = lichen::GetApp().window)
     w->Present();
 }
 
 void OnShutdown(GApplication *, gpointer)
 {
-  using namespace omgtk;
+  using namespace lichen;
   auto & app = GetApp();
   if (app.window)
   {
@@ -80,7 +80,7 @@ int main(int argc, char * argv[])
 {
   if (argc == 2 && std::strcmp(argv[1], "--version") == 0)
   {
-    std::puts(OMGTK_VERSION);
+    std::puts(LICHEN_VERSION);
     return 0;
   }
   std::setlocale(LC_NUMERIC, "C");
@@ -93,17 +93,17 @@ int main(int argc, char * argv[])
   QCoreApplication::setApplicationName("OrganicMaps");
 
   Platform & platform = GetPlatform();
-  LOG(LINFO, ("Organic Maps (GTK)", platform.Version(), "resources:", platform.ResourcesDir(),
+  LOG(LINFO, ("Lichen", platform.Version(), "resources:", platform.ResourcesDir(),
               "writable:", platform.WritableDir()));
 
-  auto * app = adw_application_new(omgtk::kAppId, G_APPLICATION_HANDLES_OPEN);
-  omgtk::GetApp().application = app;
+  auto * app = adw_application_new(lichen::kAppId, G_APPLICATION_HANDLES_OPEN);
+  lichen::GetApp().application = app;
   g_signal_connect(app, "startup", G_CALLBACK(OnStartup), nullptr);
   g_signal_connect(app, "activate", G_CALLBACK(OnActivate), nullptr);
   g_signal_connect(app, "open", G_CALLBACK(+[](GApplication * a, GFile ** files, int n, char *, gpointer)
   {
     OnActivate(a, nullptr);
-    if (auto * w = omgtk::GetApp().window)
+    if (auto * w = lichen::GetApp().window)
       for (int i = 0; i < n; ++i)
         w->OpenFile(files[i]);
   }), nullptr);
@@ -119,6 +119,6 @@ int main(int argc, char * argv[])
 
   int const status = g_application_run(G_APPLICATION(app), argc, argv);
   g_object_unref(app);
-  LOG(LINFO, ("Organic Maps (GTK) finished with code", status));
+  LOG(LINFO, ("Lichen finished with code", status));
   return status;
 }

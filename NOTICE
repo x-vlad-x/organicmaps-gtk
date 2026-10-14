@@ -1,4 +1,4 @@
-Organic Maps (GTK)
+Lichen — an unofficial interface for Organic Maps
 Copyright 2026 Vladislav Shadiuk
 
 Licensed under the Apache License, Version 2.0 (see LICENSE).
@@ -11,8 +11,10 @@ It is built on the Organic Maps Project (https://organicmaps.app):
   Copyright 2020-2026 Organic Maps Contributors
   Licensed under the Apache License, Version 2.0.
 The Organic Maps sources are not part of this repository; the build script downloads them from
-https://github.com/organicmaps/organicmaps. The application icon, the icons in gtk-ui/icons/
+https://github.com/organicmaps/organicmaps. The icons in gtk-ui/icons/
 (converted from the Organic Maps Android app with tools/vector2svg.py) and the UI translations
-(data/strings) come from the Organic Maps Project.
+(data/strings) come from the Organic Maps Project. The Lichen application icon
+(packaging/io.github.x_vlad_x.Lichen.svg) is original to this project.
+Until 0.1.0-preview5 this project was published as "Organic Maps (GTK)".
 
 Map data © OpenStreetMap contributors, available under the Open Database License (ODbL).

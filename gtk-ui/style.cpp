@@ -9,7 +9,7 @@
 #include <iomanip>
 #include <sstream>
 
-namespace omgtk
+namespace lichen
 {
 std::string FormatSize(uint64_t bytes)
 {
@@ -55,4 +55,4 @@ std::string FormatArrivalTime(double secondsFromNow)
   std::strftime(buf, sizeof(buf), "%H:%M", std::localtime(&t));
   return buf;
 }
-}  // namespace omgtk
+}  // namespace lichen

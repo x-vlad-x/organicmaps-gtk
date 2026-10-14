@@ -2,7 +2,7 @@
 
 #include "platform/style_utils.hpp"
 
-namespace omgtk
+namespace lichen
 {
 class MainWindow;
 
@@ -15,4 +15,4 @@ bool ZoomButtonsEnabled();
 bool KeepScreenOn();
 void ApplyNightMode(style_utils::NightMode mode);
 void SyncAppColorScheme();
-}  // namespace omgtk
+}  // namespace lichen

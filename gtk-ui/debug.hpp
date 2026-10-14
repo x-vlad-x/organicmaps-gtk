@@ -2,8 +2,8 @@
 
 #include <gio/gio.h>
 
-namespace omgtk
+namespace lichen
 {
 class MainWindow;
 void RegisterDebugActions(MainWindow & window, GApplication * app);
-}  // namespace omgtk
+}  // namespace lichen

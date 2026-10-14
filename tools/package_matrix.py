@@ -14,20 +14,20 @@ def validate_elf(path, architecture):
 
 
 def stage_path(target):
-    return Path("out/packages") / target / ("OrganicMapsGtk.AppDir" if target.startswith("appimage-") else "root")
+    return Path("out/packages") / target / ("Lichen.AppDir" if target.startswith("appimage-") else "root")
 
 
 def package_name(target, version):
     kind, arch = target.split("-", 1)
     machine = ARCHITECTURES[arch]
     if kind == "deb":
-        return f"organicmaps-gtk_{version}-1_{arch}.deb"
+        return f"lichen_{version}-1_{arch}.deb"
     if kind == "rpm":
-        return f"organicmaps-gtk-{version}-1.fc44.{machine}.rpm"
+        return f"lichen-{version}-1.fc44.{machine}.rpm"
     if kind == "appimage":
-        return f"OrganicMapsGtk-{version}-{machine}.AppImage"
+        return f"Lichen-{version}-{machine}.AppImage"
     raise ValueError(f"Unknown package format: {kind}")
 
 
 def srpm_name(version):
-    return f"organicmaps-gtk-{version}-1.fc44.src.rpm"
+    return f"lichen-{version}-1.fc44.src.rpm"

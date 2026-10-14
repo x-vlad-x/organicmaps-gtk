@@ -22,7 +22,7 @@
 #include "base/file_name_utils.hpp"
 #include "base/logging.hpp"
 
-namespace omgtk
+namespace lichen
 {
 namespace
 {
@@ -53,7 +53,7 @@ char const * MyPositionIcon(location::EMyPositionMode mode)
 MainWindow::MainWindow(AdwApplication * app)
 {
   m_window = ADW_APPLICATION_WINDOW(adw_application_window_new(GTK_APPLICATION(app)));
-  gtk_window_set_title(GTK_WINDOW(m_window), "Organic Maps (GTK)");
+  gtk_window_set_title(GTK_WINDOW(m_window), "Lichen");
   gtk_window_set_icon_name(GTK_WINDOW(m_window), kAppId);
   gtk_window_set_default_size(GTK_WINDOW(m_window), 420, 860);
 
@@ -150,7 +150,7 @@ void MainWindow::BuildUi()
   auto * mapToolbar = adw_toolbar_view_new();
   adw_toolbar_view_add_top_bar(ADW_TOOLBAR_VIEW(mapToolbar), adw_header_bar_new());
   adw_toolbar_view_set_content(ADW_TOOLBAR_VIEW(mapToolbar), GTK_WIDGET(m_sheet));
-  m_mapPage = adw_navigation_page_new(mapToolbar, "Organic Maps (GTK)");
+  m_mapPage = adw_navigation_page_new(mapToolbar, "Lichen");
   adw_navigation_page_set_tag(m_mapPage, "map");
   adw_navigation_view_add(m_nav, m_mapPage);
 
@@ -491,7 +491,7 @@ void MainWindow::UpdateKeepScreenOn()
   bool const keep = KeepScreenOn() && !m_suspended;
   if (keep && !m_keepScreenOnCookie)
     m_keepScreenOnCookie = gtk_application_inhibit(gtk_window_get_application(GTK_WINDOW(m_window)),
-                                                   GTK_WINDOW(m_window), GTK_APPLICATION_INHIBIT_IDLE, "Organic Maps");
+                                                   GTK_WINDOW(m_window), GTK_APPLICATION_INHIBIT_IDLE, "Lichen");
   else if (!keep && m_keepScreenOnCookie)
   {
     gtk_application_uninhibit(gtk_window_get_application(GTK_WINDOW(m_window)), m_keepScreenOnCookie);
@@ -768,4 +768,4 @@ void MainWindow::OnSuspendedChanged()
     fw.EnterForeground();
   UpdateKeepScreenOn();
 }
-}  // namespace omgtk
+}  // namespace lichen

@@ -18,7 +18,7 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     user = pwd.getpwnam("app")
     processes = []
-    with tempfile.TemporaryDirectory(prefix="organicmaps-rpm-smoke-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="lichen-rpm-smoke-") as tmp:
         root = Path(tmp)
         for directory in (root, root / "home", root / "runtime", root / "framebuffer"):
             directory.mkdir(exist_ok=True)
@@ -43,7 +43,7 @@ def main():
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gdk, Gio, Gtk
 Gtk.init()
-app_id = "io.github.x_vlad_x.OrganicMapsGtk"
+app_id = "io.github.x_vlad_x.Lichen"
 assert Gio.DesktopAppInfo.new(app_id + ".desktop") is not None
 theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
 for size in (48, 64, 128, 256, 512):
@@ -52,7 +52,7 @@ for size in (48, 64, 128, 256, 512):
 print("Desktop entry and all five icon sizes resolve")
 '''
                 subprocess.run(["python3", "-c", icon_check], env=env, user=user.pw_uid, group=user.pw_gid, check=True)
-                application = subprocess.Popen(["dbus-run-session", "--", "/usr/bin/organicmaps-gtk"], env=env,
+                application = subprocess.Popen(["dbus-run-session", "--", "/usr/bin/lichen"], env=env,
                                                user=user.pw_uid, group=user.pw_gid, stdout=app_log,
                                                stderr=subprocess.STDOUT, start_new_session=True)
                 processes.append(application)
@@ -73,7 +73,7 @@ print("Desktop entry and all five icon sizes resolve")
                     raise RuntimeError("The installed app exited after renderer initialization")
                 shutil.copy2(root / "framebuffer/Xvfb_screen0", output / "screen.xwd")
                 (output / "result.json").write_text(json.dumps(dict(
-                    version=subprocess.check_output(["organicmaps-gtk", "--version"], env=env,
+                    version=subprocess.check_output(["lichen", "--version"], env=env,
                                                     user=user.pw_uid, group=user.pw_gid, text=True).strip(),
                     architecture=os.uname().machine, unprivileged_gui=True, renderer="OpenGLES3",
                     desktop_entry=True, icon_sizes=[48, 64, 128, 256, 512]), indent=2) + "\n")

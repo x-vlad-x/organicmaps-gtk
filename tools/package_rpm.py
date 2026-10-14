@@ -27,7 +27,7 @@ def full_sources(destination):
                     core_qt_version=subprocess.check_output(["bash", "tools/unix/version.sh", "qt_version"], cwd=core, text=True).strip(),
                     core_int_version=subprocess.check_output(["bash", "tools/unix/version.sh", "qt_int_version"], cwd=core, text=True).strip(),
                     files={name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in names})
-    prefix = f"OrganicMapsGtk-{version}"
+    prefix = f"Lichen-{version}"
     with tarfile.open(destination, "w:gz", compresslevel=2) as archive:
         for name in names + ["organicmaps/" + n for n in filter(None, upstream)]:
             path = ROOT / name
@@ -53,19 +53,19 @@ def main():
             shutil.rmtree(workspace / name)
     sources = workspace / "SOURCES"
     sources.mkdir(parents=True, exist_ok=True)
-    full_sources(sources / f"OrganicMapsGtk-{version}-full-sources.tar.gz")
+    full_sources(sources / f"Lichen-{version}-full-sources.tar.gz")
     specs = workspace / "SPECS"
     specs.mkdir(exist_ok=True)
-    spec = (ROOT / "packaging/organicmaps-gtk.spec").read_text().replace(
+    spec = (ROOT / "packaging/lichen.spec").read_text().replace(
         "@APP_VERSION@", version).replace("@RPM_VERSION@", version.replace("-preview", "~preview"))
-    (specs / "organicmaps-gtk.spec").write_text(spec)
+    (specs / "lichen.spec").write_text(spec)
     def execute(command):
         subprocess.run(["podman", "run", "--rm", "--network=none", "--userns=keep-id",
                         "-v", f"{ROOT}:/src:z", "-w", "/src",
                         args.container, *map(str, command)], check=True)
     execute(["rpmbuild", "-ba" if args.arch == "amd64" else "-bb",
              "--define", f"_topdir {container_path(workspace)}", "--define", "_buildhost localhost",
-             "--define", f"_smp_build_ncpus {args.jobs}", container_path(specs / "organicmaps-gtk.spec")])
+             "--define", f"_smp_build_ncpus {args.jobs}", container_path(specs / "lichen.spec")])
     binaries = list((workspace / "RPMS").glob("*/*.rpm"))
     if len(binaries) != 1:
         raise ValueError(f"Expected exactly one binary RPM, got {binaries}")

@@ -10,7 +10,7 @@
 
 #include <unistd.h>
 
-namespace omgtk::tts
+namespace lichen::tts
 {
 namespace
 {
@@ -137,4 +137,4 @@ void Speak(std::vector<std::string> const & phrases)
   }
   Speak(text);
 }
-}  // namespace omgtk::tts
+}  // namespace lichen::tts

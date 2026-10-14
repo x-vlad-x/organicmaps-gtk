@@ -6,7 +6,7 @@
 #include "base/assert.hpp"
 #include "base/logging.hpp"
 
-namespace omgtk
+namespace lichen
 {
 OffscreenFrame::OffscreenFrame(uint32_t w, uint32_t h) : m_width(w), m_height(h)
 {
@@ -203,4 +203,4 @@ GLuint GtkContextFactory::AcquireFrame(uint32_t & w, uint32_t & h)
     return 0;
   return m_draw->AcquireFrame(w, h);
 }
-}  // namespace omgtk
+}  // namespace lichen

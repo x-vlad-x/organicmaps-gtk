@@ -15,8 +15,8 @@ from package_matrix import TARGETS, ARCHITECTURES, stage_path, package_name, srp
 ROOT = Path(__file__).resolve().parents[1]
 STAGES = {target: stage_path(target) for target in TARGETS}
 
-PRIVATE = Path("usr/libexec/organicmaps-gtk")
-DOC = Path("usr/share/doc/organicmaps-gtk")
+PRIVATE = Path("usr/libexec/lichen")
+DOC = Path("usr/share/doc/lichen")
 
 
 def run(*args):
@@ -34,7 +34,7 @@ def check():
     version = (ROOT / "VERSION").read_text().strip()
     check_version(version, os.environ.get("GITHUB_REF", ""))
     notes = (ROOT / "packaging/RELEASE-NOTES.md").read_text()
-    if not notes.splitlines()[0].startswith(f"# Organic Maps (GTK) {version} "):
+    if not notes.splitlines()[0].startswith(f"# Lichen {version} "):
         raise ValueError("Update RELEASE-NOTES.md for VERSION before building a release")
     if run("git", "status", "--porcelain"):
         raise ValueError("Build only from a clean source commit")
@@ -56,15 +56,15 @@ def bundle(target):
     if (info["project_commit"], info["project_dirty"], info["version"], info["architecture"]) != (
             run("git", "rev-parse", "HEAD"), False, version, architecture):
         raise ValueError("Package provenance does not match this build")
-    binary = ROOT / stage / PRIVATE / "bin/organicmaps-gtk"
+    binary = ROOT / stage / PRIVATE / "bin/lichen"
     validate_elf(binary, architecture)
     metadata = [stage / PRIVATE / "build-info.json"]
     if kind != "rpm":
         metadata.append(stage / DOC / "compiler-runtime/sources.json")
-    desktop = ROOT / stage / "usr/share/applications/io.github.x_vlad_x.OrganicMapsGtk.desktop"
+    desktop = ROOT / stage / "usr/share/applications/io.github.x_vlad_x.Lichen.desktop"
     run("desktop-file-validate", str(desktop))
     for size in (48, 64, 128, 256, 512):
-        icon = ROOT / stage / f"usr/share/icons/hicolor/{size}x{size}/apps/io.github.x_vlad_x.OrganicMapsGtk.png"
+        icon = ROOT / stage / f"usr/share/icons/hicolor/{size}x{size}/apps/io.github.x_vlad_x.Lichen.png"
         if not icon.is_file():
             raise ValueError(f"Missing installed icon: {icon}")
     package = Path("out/packages") / package_name(target, version)
@@ -131,7 +131,7 @@ def draft(version):
     if any(item["tagName"] == tag for item in existing):
         raise ValueError("A release already exists for this tag; it will not be changed")
     args = ["gh", "release", "create", tag, "--draft", "--verify-tag", "--latest=false",
-            "--title", f"Organic Maps (GTK) {version}", "--notes-file", "packaging/RELEASE-NOTES.md"]
+            "--title", f"Lichen {version}", "--notes-file", "packaging/RELEASE-NOTES.md"]
     if "-preview" in version:
         args.append("--prerelease")
     print(run(*args), flush=True)

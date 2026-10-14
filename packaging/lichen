@@ -1,10 +1,10 @@
 #!/bin/sh
-# Organic Maps (GTK) launcher.
+# Lichen launcher.
 APPDIR="$(dirname "$(readlink -f "$0")")"
 # The SSH bundle keeps this script beside bin/. System packages and AppDir install
-# it in PREFIX/bin and keep private resources in PREFIX/libexec/organicmaps-gtk.
-if [ ! -x "$APPDIR/bin/organicmaps-gtk" ]; then
-  APPDIR="$(cd "$APPDIR/../libexec/organicmaps-gtk" && pwd)" || exit 1
+# it in PREFIX/bin and keep private resources in PREFIX/libexec/lichen.
+if [ ! -x "$APPDIR/bin/lichen" ]; then
+  APPDIR="$(cd "$APPDIR/../libexec/lichen" && pwd)" || exit 1
 fi
 DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
@@ -15,4 +15,4 @@ mkdir -p "$DATA_HOME/OrganicMaps" "$CONFIG_HOME/OrganicMaps"
 export MWM_RESOURCES_DIR="$APPDIR/data/"
 export MWM_WRITABLE_DIR="$DATA_HOME/OrganicMaps/"
 
-exec "$APPDIR/bin/organicmaps-gtk" "$@"
+exec "$APPDIR/bin/lichen" "$@"

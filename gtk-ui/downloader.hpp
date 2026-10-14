@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-namespace omgtk
+namespace lichen
 {
 class MainWindow;
 
@@ -59,4 +59,4 @@ private:
   std::vector<std::unique_ptr<Page>> m_pages;
   uint64_t m_searchTimestamp = 0;
 };
-}  // namespace omgtk
+}  // namespace lichen

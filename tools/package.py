@@ -15,8 +15,8 @@ import subprocess
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
-APP_ID = "io.github.x_vlad_x.OrganicMapsGtk"
-PRIVATE = Path("usr/libexec/organicmaps-gtk")
+APP_ID = "io.github.x_vlad_x.Lichen"
+PRIVATE = Path("usr/libexec/lichen")
 
 
 def run(command, **kwargs):
@@ -77,18 +77,18 @@ def download_tools(architecture="amd64"):
 
 
 def prepare_stage(args):
-    binary = args.build_dir / "organicmaps-gtk"
+    binary = args.build_dir / "lichen"
     machine = struct.unpack_from("<H", binary.read_bytes(), 18)[0]
     architecture = {62: "amd64", 183: "arm64"}.get(machine)
     if not architecture:
         raise RuntimeError(f"Unsupported executable architecture: {machine}")
     workspace = ROOT / "out/packages" / f"{args.format}-{architecture}"
-    stage = workspace / ("OrganicMapsGtk.AppDir" if args.format == "appimage" else "root")
+    stage = workspace / ("Lichen.AppDir" if args.format == "appimage" else "root")
     if stage.exists():
         shutil.rmtree(stage)
     stage.mkdir(parents=True)
     execute(args, ["env", f"DESTDIR={inside(args, stage)}", "cmake", "--install",
-                   inside(args, args.build_dir), "--component", "OrganicMapsGtk", "--prefix", "/usr", "--strip"])
+                   inside(args, args.build_dir), "--component", "Lichen", "--prefix", "/usr", "--strip"])
     version = (ROOT / "VERSION").read_text().strip()
     commit, dirty = project_state()
     info = {
@@ -115,9 +115,9 @@ def build_deb(args, stage, architecture, version):
     debian = workspace / "debian"
     debian.mkdir(exist_ok=True)
     (debian / "control").write_text(
-        f"Source: organicmaps-gtk\nMaintainer: {maintainer}\n\n"
-        "Package: organicmaps-gtk\nArchitecture: any\nDescription: Unofficial GTK offline maps\n")
-    dependencies = execute(args, ["dpkg-shlibdeps", "-O", "-e" + str(inside(args, stage / PRIVATE / "bin/organicmaps-gtk"))],
+        f"Source: lichen\nMaintainer: {maintainer}\n\n"
+        "Package: lichen\nArchitecture: any\nDescription: Unofficial GTK offline maps\n")
+    dependencies = execute(args, ["dpkg-shlibdeps", "-O", "-e" + str(inside(args, stage / PRIVATE / "bin/lichen"))],
                            cwd=workspace, capture=True).stdout.strip()
     dependencies = next(line.split("=", 1)[1] for line in dependencies.splitlines() if line.startswith("shlibs:Depends="))
     version = version.replace("-preview", "~preview") + "-1"
@@ -125,24 +125,26 @@ def build_deb(args, stage, architecture, version):
     control = stage / "DEBIAN"
     control.mkdir()
     (control / "control").write_text(
-        f"Package: organicmaps-gtk\nVersion: {version}\nArchitecture: {architecture}\n"
+        f"Package: lichen\nVersion: {version}\nArchitecture: {architecture}\n"
         f"Maintainer: {maintainer}\nSection: education\nPriority: optional\n"
         f"Installed-Size: {installed_size}\nDepends: {dependencies}, espeak-ng, hicolor-icon-theme, libgles2, libegl1\n"
         "Recommends: geoclue-2.0, iio-sensor-proxy\n"
-        "Homepage: https://github.com/x-vlad-x/organicmaps-gtk\n"
+        # Published as organicmaps-gtk up to 0.1.0-preview5.
+        "Conflicts: organicmaps-gtk\nReplaces: organicmaps-gtk\nProvides: organicmaps-gtk\n"
+        "Homepage: https://github.com/x-vlad-x/lichen\n"
         "Description: Unofficial GTK interface for offline maps and navigation\n"
         " Offline maps for Linux phones and desktops. Based on the Organic Maps Project.\n"
         " Includes offline search, routing, bookmarks and downloadable maps.\n")
-    copyright_file = stage / "usr/share/doc/organicmaps-gtk/copyright"
+    copyright_file = stage / "usr/share/doc/lichen/copyright"
     copyright_file.write_text(
-        "Organic Maps (GTK) — unofficial interface\n"
+        "Lichen — unofficial interface for Organic Maps\n"
         "Copyright 2026 Vladislav Shadiuk. Code: Apache-2.0; see LICENSE and NOTICE.\n"
         "Organic Maps source, resources and map data have additional notices and licenses.\n"
         "See upstream/NOTICE, upstream/DATA_LICENSE.txt, upstream/dep5 and upstream/copyright.html.\n"
         "Full third-party license texts are preserved under upstream/.\n")
     # Keep the Debian ordering marker in control, but use a GitHub-safe asset filename.
     filename_version = version.replace("~", "-")
-    output = ROOT / "out/packages" / f"organicmaps-gtk_{filename_version}_{architecture}.deb"
+    output = ROOT / "out/packages" / f"lichen_{filename_version}_{architecture}.deb"
     execute(args, ["dpkg-deb", "--root-owner-group", "--build", inside(args, stage), inside(args, output)])
     execute(args, ["dpkg-deb", "--info", inside(args, output)])
     return output
@@ -158,13 +160,13 @@ def build_appimage(args, stage, architecture, version):
     machine = {"amd64": "x86_64", "arm64": "aarch64"}[architecture]
     tools = download_tools(architecture)
     shutil.copytree(ROOT / "packaging/licenses/appimage-runtime",
-                    stage / "usr/share/doc/organicmaps-gtk/appimage-runtime", dirs_exist_ok=True)
+                    stage / "usr/share/doc/lichen/appimage-runtime", dirs_exist_ok=True)
     appimage_resources(args, stage)
     desktop = stage / f"usr/share/applications/{APP_ID}.desktop"
     execute(args, ["desktop-file-validate", inside(args, desktop)])
     execute(args, [inside(args, tools / f"linuxdeploy-{machine}.AppImage"), "--appimage-extract-and-run",
                    "--appdir", inside(args, stage), "--deploy-deps-only", inside(args, stage / "usr"),
-                   "--deploy-deps-only", inside(args, stage / PRIVATE / "bin/organicmaps-gtk"),
+                   "--deploy-deps-only", inside(args, stage / PRIVATE / "bin/lichen"),
                    "--desktop-file", inside(args, desktop), "--icon-file",
                    inside(args, stage / f"usr/share/icons/hicolor/512x512/apps/{APP_ID}.png"),
                    "--custom-apprun", inside(args, ROOT / "packaging/AppRun")])
@@ -173,7 +175,7 @@ def build_appimage(args, stage, architecture, version):
             raise RuntimeError(f"AppImage is missing a required application library: {library}")
     # Include distro license files and an inventory for bundled dynamic libraries.
     execute(args, ["python3", inside(args, ROOT / "tools/prepare_appimage.py"), inside(args, stage), "--licenses"])
-    output = ROOT / "out/packages" / f"OrganicMapsGtk-{version}-{machine}.AppImage"
+    output = ROOT / "out/packages" / f"Lichen-{version}-{machine}.AppImage"
     execute(args, ["env", f"ARCH={machine}", inside(args, tools / f"appimagetool-{machine}.AppImage"),
                    "--appimage-extract-and-run", "--no-appstream", "--runtime-file", inside(args, tools / f"runtime-{machine}"),
                    inside(args, stage), inside(args, output)])

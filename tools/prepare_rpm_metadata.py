@@ -12,5 +12,5 @@ info = dict(version=(root / "VERSION").read_text().strip(),
             project_commit=metadata["commit"], project_dirty=metadata["dirty"],
             core_commit=metadata["core_commit"], distribution="Fedora 44",
             compiler_runtime="system libraries; no bundled GCC runtime")
-target = Path(sys.argv[1]) / "usr/libexec/organicmaps-gtk/build-info.json"
+target = Path(sys.argv[1]) / "usr/libexec/lichen/build-info.json"
 target.write_text(json.dumps(info, indent=2) + "\n")

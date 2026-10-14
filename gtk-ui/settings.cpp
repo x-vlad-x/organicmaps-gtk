@@ -18,7 +18,7 @@
 
 #include "indexer/map_style.hpp"
 
-namespace omgtk
+namespace lichen
 {
 namespace
 {
@@ -324,9 +324,9 @@ void ShowLayersDialog(MainWindow & window)
 void ShowAboutDialog(MainWindow & window)
 {
   auto * about = adw_about_dialog_new();
-  adw_about_dialog_set_application_name(ADW_ABOUT_DIALOG(about), "Organic Maps (GTK)");
+  adw_about_dialog_set_application_name(ADW_ABOUT_DIALOG(about), "Lichen");
   adw_about_dialog_set_application_icon(ADW_ABOUT_DIALOG(about), kAppId);
-  adw_about_dialog_set_version(ADW_ABOUT_DIALOG(about), OMGTK_VERSION);
+  adw_about_dialog_set_version(ADW_ABOUT_DIALOG(about), LICHEN_VERSION);
   adw_about_dialog_set_developer_name(ADW_ABOUT_DIALOG(about), "Vladislav Shadiuk");
   adw_about_dialog_set_website(ADW_ABOUT_DIALOG(about), kProjectUrl);
   adw_about_dialog_add_link(ADW_ABOUT_DIALOG(about), "Organic Maps Project", "https://organicmaps.app");
@@ -343,4 +343,4 @@ void ShowAboutDialog(MainWindow & window)
                                      GTK_LICENSE_CUSTOM, "Map data is available under the Open Database License (ODbL).");
   adw_dialog_present(ADW_DIALOG(about), GTK_WIDGET(window.Window()));
 }
-}  // namespace omgtk
+}  // namespace lichen

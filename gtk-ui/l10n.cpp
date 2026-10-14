@@ -16,7 +16,7 @@
 #include <mutex>
 #include <unordered_map>
 
-namespace omgtk
+namespace lichen
 {
 namespace
 {
@@ -244,7 +244,7 @@ std::string TF(std::string const & key, std::vector<std::string> const & args)
 {
   return Format(T(key), args);
 }
-}  // namespace omgtk
+}  // namespace lichen
 
 // Implementations of the platform localization hooks (replace localization_dummy.cpp).
 namespace platform
@@ -259,7 +259,7 @@ std::string GetLocalizedTypeName(std::string const & type)
     else if (c == ':')
       c = '_';
   }
-  return omgtk::T(key);
+  return lichen::T(key);
 }
 
 std::string GetLocalizedBrandName(std::string const & brand)
@@ -269,7 +269,7 @@ std::string GetLocalizedBrandName(std::string const & brand)
 
 std::string GetLocalizedString(std::string const & key)
 {
-  return omgtk::T(key);
+  return lichen::T(key);
 }
 
 std::string GetCurrencySymbol(std::string const & currencyCode)

@@ -11,7 +11,7 @@
 
 #include <cmath>
 
-namespace omgtk
+namespace lichen
 {
 namespace
 {
@@ -442,4 +442,4 @@ void MapView::OnScroll(double dx, double dy, GdkScrollUnit unit)
   double const steps = unit == GDK_SCROLL_UNIT_WHEEL ? dy : dy / 40.0;
   GetFramework().Scale(std::exp(-steps * 0.25), false);
 }
-}  // namespace omgtk
+}  // namespace lichen

@@ -76,7 +76,7 @@ def licenses(stage):
             raise RuntimeError(f"Bundled ELF has no Debian source provenance: {relative}")
         for package in candidates or ():
             owners.setdefault(package, []).append(relative)
-    target = stage / "usr/share/doc/organicmaps-gtk/bundled"
+    target = stage / "usr/share/doc/lichen/bundled"
     target.mkdir(parents=True, exist_ok=True)
     inventory = []
     metadata = []

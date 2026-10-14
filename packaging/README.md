@@ -16,6 +16,15 @@ Local recipes do not install on the host, copy files to a phone or publish a rel
 Other RPM distributions need separate builds and tests. The ARM64 phone DEB retains
 the original cross toolchain and glibc compatibility shim; RPM/AppImage do not use it.
 
+## Application icon
+
+`io.github.x_vlad_x.Lichen.svg` is the icon source and is installed as the scalable icon.
+After changing it, re-render the 512 px PNG used for the fixed-size icons and the AppImage:
+
+```sh
+rsvg-convert -w 512 -h 512 packaging/io.github.x_vlad_x.Lichen.svg -o packaging/io.github.x_vlad_x.Lichen.png
+```
+
 ## Build locally
 
 Use an x86_64 or aarch64 Linux host with Podman, Git, Python 3 and ImageMagick
@@ -30,7 +39,7 @@ Use an x86_64 or aarch64 Linux host with Podman, Git, Python 3 and ImageMagick
 ```
 
 The `phone` and `desktop` aliases still mean `deb-arm64` and `appimage-amd64`.
-Set `OMGTK_BUILD_JOBS` to limit compiler processes (default: 8). Outputs are in
+Set `LICHEN_BUILD_JOBS` to limit compiler processes (default: 8). Outputs are in
 `out/packages/`; all build directories and downloads are ignored by Git.
 
 The core is pinned to tag `2026.09.29-32-android`, commit
@@ -46,9 +55,9 @@ are collected from the target architecture's Debian environment.
 
 ## RPM and source RPM
 
-`packaging/organicmaps-gtk.spec` is expanded with the project version and built
+`packaging/lichen.spec` is expanded with the project version and built
 inside Fedora 44. It compiles the interface and pinned core, installs only the
-OrganicMapsGtk component, and runs desktop metadata and version checks.
+Lichen component, and runs desktop metadata and version checks.
 RPM generates ELF library dependencies automatically; eSpeak and hicolor icons
 are explicit requirements. Installation uses the distribution's normal icon and
 desktop database triggers and never modifies users' home directories.
@@ -64,7 +73,7 @@ To rebuild it on either architecture in Fedora 44, install the spec's build
 dependencies (listed in `build-env/Containerfile.rpm`) and run:
 
 ```sh
-rpmbuild --rebuild organicmaps-gtk-0.1.0-preview5-1.fc44.src.rpm
+rpmbuild --rebuild lichen-0.1.0-preview6-1.fc44.src.rpm
 ```
 
 The source RPM contains project sources; it does not need to clone repositories.
@@ -113,8 +122,8 @@ collect its compiler inventory and (for AppImage) bundled library inventory:
 
 ```sh
 python3 tools/collect_debian_sources.py \
-  out/packages/appimage-amd64/OrganicMapsGtk.AppDir/usr/share/doc/organicmaps-gtk/bundled/bundled-packages.json \
-  out/packages/appimage-amd64/OrganicMapsGtk.AppDir/usr/share/doc/organicmaps-gtk/compiler-runtime/sources.json \
+  out/packages/appimage-amd64/Lichen.AppDir/usr/share/doc/lichen/bundled/bundled-packages.json \
+  out/packages/appimage-amd64/Lichen.AppDir/usr/share/doc/lichen/compiler-runtime/sources.json \
   --container localhost/om-desktop --output out/corresponding-sources/appimage-amd64
 ```
 

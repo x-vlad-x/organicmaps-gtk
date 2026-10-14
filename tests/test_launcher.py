@@ -11,17 +11,17 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class LauncherTest(unittest.TestCase):
     def check_layout(self, installed):
-        with tempfile.TemporaryDirectory(prefix="omgtk launcher ") as directory:
+        with tempfile.TemporaryDirectory(prefix="lichen launcher ") as directory:
             directory = Path(directory)
             launcher_dir = directory / "usr/bin" if installed else directory / "SSH bundle"
-            private = directory / "usr/libexec/organicmaps-gtk" if installed else launcher_dir
+            private = directory / "usr/libexec/lichen" if installed else launcher_dir
             launcher_dir.mkdir(parents=True)
             (private / "bin").mkdir(parents=True, exist_ok=True)
-            binary = private / "bin/organicmaps-gtk"
+            binary = private / "bin/lichen"
             binary.write_text('#!/bin/sh\nprintf "%s\\n" "$MWM_RESOURCES_DIR" "$MWM_WRITABLE_DIR" "$@"\n')
             binary.chmod(0o755)
-            launcher = launcher_dir / "organicmaps-gtk"
-            shutil.copy2(ROOT / "packaging/organicmaps-gtk", launcher)
+            launcher = launcher_dir / "lichen"
+            shutil.copy2(ROOT / "packaging/lichen", launcher)
             launcher.chmod(0o755)
             env = dict(os.environ, XDG_DATA_HOME=str(directory / "user data"), XDG_CONFIG_HOME=str(directory / "user config"))
             result = subprocess.run([str(launcher), "a bookmark.gpx", "geo:52.5,13.4"], env=env,

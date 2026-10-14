@@ -8,7 +8,7 @@
 
 #include <cmath>
 
-namespace omgtk
+namespace lichen
 {
 LocationService::LocationService() = default;
 
@@ -171,4 +171,4 @@ void LocationService::OnCompassProperties(GDBusProxy *, GVariant * changed, GStr
   if (self->m_onCompass)
     self->m_onCompass(heading * M_PI / 180.0);
 }
-}  // namespace omgtk
+}  // namespace lichen

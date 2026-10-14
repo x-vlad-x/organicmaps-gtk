@@ -1,6 +1,6 @@
 // Remote control for testing on the phone without touching it:
-//   gdbus call --session --dest io.github.x_vlad_x.OrganicMapsGtk
-//     --object-path /io/github/x_vlad_x/OrganicMapsGtk
+//   gdbus call --session --dest io.github.x_vlad_x.Lichen
+//     --object-path /io/github/x_vlad_x/Lichen
 //     --method org.gtk.Actions.Activate debug "[<'tap 200 400'>]" "{}"
 // Commands: tap X Y | longtap X Y | drag X1 Y1 X2 Y2 | search-row N | center LAT LON ZOOM |
 //           location LAT LON [SPEED BEARING] | back | key NAME
@@ -22,7 +22,7 @@
 
 #include <sstream>
 
-namespace omgtk
+namespace lichen
 {
 namespace
 {
@@ -200,4 +200,4 @@ void RegisterDebugActions(MainWindow & window, GApplication * app)
   g_action_map_add_action(G_ACTION_MAP(app), G_ACTION(action));
   g_object_unref(action);
 }
-}  // namespace omgtk
+}  // namespace lichen

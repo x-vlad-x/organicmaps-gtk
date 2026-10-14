@@ -8,11 +8,11 @@
 
 class Framework;
 
-namespace omgtk
+namespace lichen
 {
 // Application ID: D-Bus name, desktop file and icon name.
-inline constexpr char kAppId[] = "io.github.x_vlad_x.OrganicMapsGtk";
-inline constexpr char kProjectUrl[] = "https://github.com/x-vlad-x/organicmaps-gtk";
+inline constexpr char kAppId[] = "io.github.x_vlad_x.Lichen";
+inline constexpr char kProjectUrl[] = "https://github.com/x-vlad-x/lichen";
 
 class MapView;
 class MainWindow;
@@ -75,4 +75,4 @@ gulong Connect(gpointer instance, char const * signal, Fn && fn)
 {
   return ConnectImpl(instance, signal, std::function<Signature>(std::forward<Fn>(fn)));
 }
-}  // namespace omgtk
+}  // namespace lichen

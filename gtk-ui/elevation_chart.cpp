@@ -8,7 +8,7 @@
 #include <cmath>
 #include <vector>
 
-namespace omgtk
+namespace lichen
 {
 namespace
 {
@@ -126,4 +126,4 @@ GtkWidget * MakeElevationChart(ElevationInfo const & info, int height)
                                  [](gpointer d) { delete static_cast<ChartData *>(d); });
   return area;
 }
-}  // namespace omgtk
+}  // namespace lichen

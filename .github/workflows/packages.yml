@@ -34,7 +34,7 @@ jobs:
           - target: rpm-arm64
             runner: ubuntu-24.04-arm
     env:
-      OMGTK_BUILD_JOBS: '4'
+      LICHEN_BUILD_JOBS: '4'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

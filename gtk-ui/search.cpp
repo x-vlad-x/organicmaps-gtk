@@ -19,7 +19,7 @@
 
 #include <glib/gmarkup.h>
 
-namespace omgtk
+namespace lichen
 {
 namespace
 {
@@ -397,4 +397,4 @@ void SearchUi::ClearOnMapSearch()
   gtk_widget_set_visible(m_mapBar, FALSE);
   m_window.SetMode(MainWindow::Mode::Default);
 }
-}  // namespace omgtk
+}  // namespace lichen

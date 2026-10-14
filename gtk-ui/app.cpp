@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <cctype>
 
-namespace omgtk
+namespace lichen
 {
 App & GetApp()
 {
@@ -95,4 +95,4 @@ void CopyToClipboard(std::string const & text)
   GdkClipboard * cb = gdk_display_get_clipboard(gdk_display_get_default());
   gdk_clipboard_set_text(cb, text.c_str());
 }
-}  // namespace omgtk
+}  // namespace lichen

@@ -6,7 +6,7 @@
 
 #include <string>
 
-namespace omgtk
+namespace lichen
 {
 class MainWindow;
 
@@ -39,4 +39,4 @@ private:
 // Asks for a text (list name, track name) in a small dialog.
 void AskText(GtkWidget * parent, std::string const & title, std::string const & initial,
              std::function<void(std::string const &)> onOk);
-}  // namespace omgtk
+}  // namespace lichen

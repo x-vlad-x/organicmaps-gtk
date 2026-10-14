@@ -14,7 +14,7 @@
 
 #include <string>
 
-namespace omgtk
+namespace lichen
 {
 class MainWindow;
 
@@ -95,4 +95,4 @@ private:
   double m_lastSpeed = -1;
   std::string m_lastTurnIcon;
 };
-}  // namespace omgtk
+}  // namespace lichen

@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <string>
 
-namespace omgtk
+namespace lichen
 {
 class MainWindow;
 
@@ -52,4 +52,4 @@ private:
   bool m_settingText = false;
   uint64_t m_timestamp = 0;
 };
-}  // namespace omgtk
+}  // namespace lichen

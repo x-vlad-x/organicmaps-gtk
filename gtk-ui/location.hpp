@@ -9,7 +9,7 @@
 
 typedef struct _GClueSimple GClueSimple;
 
-namespace omgtk
+namespace lichen
 {
 // GPS through GeoClue (on FuriOS it uses the hybris GNSS source) and the magnetometer through
 // iio-sensor-proxy. Updates are delivered to the Framework on the main thread.
@@ -50,4 +50,4 @@ private:
   GDBusProxy * m_compass = nullptr;
   std::optional<location::GpsInfo> m_last;
 };
-}  // namespace omgtk
+}  // namespace lichen

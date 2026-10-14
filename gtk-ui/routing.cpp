@@ -22,7 +22,7 @@
 
 #include <cmath>
 
-namespace omgtk
+namespace lichen
 {
 namespace
 {
@@ -882,4 +882,4 @@ void RoutingUi::RestoreSavedRoute()
     });
   });
 }
-}  // namespace omgtk
+}  // namespace lichen

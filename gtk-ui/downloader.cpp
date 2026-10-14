@@ -15,7 +15,7 @@
 
 #include <set>
 
-namespace omgtk
+namespace lichen
 {
 namespace
 {
@@ -401,4 +401,4 @@ void DownloaderPage::OnProgress(storage::CountryId const & id, downloader::Progr
 {
   OnCountryChanged(id);
 }
-}  // namespace omgtk
+}  // namespace lichen

@@ -11,14 +11,14 @@ export QT_PLUGIN_PATH="$APPDIR/usr/lib/qt6/plugins"
 export ESPEAK_DATA_PATH="$APPDIR/usr/share/espeak-ng-data"
 
 # Loader caches contain absolute filenames and must be regenerated after relocation.
-cache="$(mktemp -d "${TMPDIR:-/tmp}/organicmaps-gtk-loaders.XXXXXXXX")"
+cache="$(mktemp -d "${TMPDIR:-/tmp}/lichen-loaders.XXXXXXXX")"
 trap 'rm -rf -- "$cache"' EXIT HUP INT TERM
 if [ -x "$APPDIR/usr/bin/gdk-pixbuf-query-loaders" ]; then
   "$APPDIR/usr/bin/gdk-pixbuf-query-loaders" > "$cache/loaders.cache"
   export GDK_PIXBUF_MODULE_FILE="$cache/loaders.cache"
 fi
 set +e
-"$APPDIR/usr/bin/organicmaps-gtk" "$@"
+"$APPDIR/usr/bin/lichen" "$@"
 status=$?
 set -e
 exit "$status"

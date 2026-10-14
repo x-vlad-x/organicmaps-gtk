@@ -9,7 +9,7 @@ import sys
 
 
 def prepare(stage, compiler):
-    target = stage / "usr/share/doc/organicmaps-gtk/compiler-runtime"
+    target = stage / "usr/share/doc/lichen/compiler-runtime"
     target.mkdir(parents=True, exist_ok=True)
     records = []
     for option in ("-print-file-name=libstdc++.a", "-print-libgcc-file-name"):

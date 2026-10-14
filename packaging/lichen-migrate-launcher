@@ -1,0 +1,56 @@
+#!/bin/sh
+# Run as the desktop user after replacing the original SSH install with a package.
+# Package maintainer scripts must not modify files in users' home directories.
+set -eu
+
+APP_ID=io.github.x_vlad_x.Lichen
+PREFIX="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+SYSTEM_ENTRY="$PREFIX/share/applications/$APP_ID.desktop"
+APPLICATIONS="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+BACKUP_ROOT="${XDG_STATE_HOME:-$HOME/.local/state}/lichen/launcher-backups"
+BACKUP_DIR=""
+MIGRATED=0
+KEPT=0
+
+if [ ! -f "$SYSTEM_ENTRY" ] || [ ! -x "$PREFIX/bin/lichen" ]; then
+  echo "The packaged application must be installed before migrating its launcher." >&2
+  exit 1
+fi
+
+# Moves a per-user launcher written by the SSH installer into a backup directory.
+# Arguments: desktop file ID, SSH install directory, executable name.
+migrate_entry() {
+  entry="$APPLICATIONS/$1.desktop"
+  if [ ! -e "$entry" ] && [ ! -L "$entry" ]; then
+    return 0
+  fi
+  if [ -L "$entry" ] || [ ! -f "$entry" ] ||
+     ! grep -Fqx "Exec=$2/$3 %U" "$entry" ||
+     ! grep -Fqx "Icon=$2/$1.png" "$entry" ||
+     grep -Eq '^(Hidden|NoDisplay|OnlyShowIn|NotShowIn|TryExec)=' "$entry"; then
+    echo "The local desktop entry has custom settings; it was left unchanged: $entry" >&2
+    KEPT=1
+    return 0
+  fi
+  if [ -z "$BACKUP_DIR" ]; then
+    mkdir -p "$BACKUP_ROOT"
+    BACKUP_DIR="$(mktemp -d "$BACKUP_ROOT/migration.XXXXXX")"
+  fi
+  mv -- "$entry" "$BACKUP_DIR/$1.desktop"
+  MIGRATED=1
+}
+
+migrate_entry "$APP_ID" "$HOME/.local/share/lichen" lichen
+# Launcher of the SSH install made before the project was renamed from Organic Maps (GTK).
+migrate_entry io.github.x_vlad_x.OrganicMapsGtk "$HOME/.local/share/organicmaps-gtk" organicmaps-gtk
+
+if [ "$MIGRATED" -eq 1 ]; then
+  if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database "$APPLICATIONS" ||
+      echo "Could not refresh the local desktop database; the launcher was migrated." >&2
+  fi
+  printf 'Packaged launcher: %s\nPrevious launcher saved in: %s\n' "$SYSTEM_ENTRY" "$BACKUP_DIR"
+elif [ "$KEPT" -eq 0 ]; then
+  echo "The packaged launcher is already available. No local override to migrate."
+fi
+exit "$KEPT"

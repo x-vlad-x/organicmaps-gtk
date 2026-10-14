@@ -11,7 +11,7 @@
 #include <memory>
 #include <string>
 
-namespace omgtk
+namespace lichen
 {
 class PlacePage;
 class SearchUi;
@@ -125,4 +125,4 @@ private:
   guint m_keepScreenOnCookie = 0;
   std::function<void()> m_pendingUrl;
 };
-}  // namespace omgtk
+}  // namespace lichen

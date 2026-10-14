@@ -14,7 +14,7 @@
 
 #include "base/string_utils.hpp"
 
-namespace omgtk
+namespace lichen
 {
 namespace
 {
@@ -597,4 +597,4 @@ void BookmarksPage::EditBookmark(MainWindow & window, kml::MarkId id)
   adw_dialog_set_child(dialog, toolbar);
   adw_dialog_present(dialog, GTK_WIDGET(window.Window()));
 }
-}  // namespace omgtk
+}  // namespace lichen

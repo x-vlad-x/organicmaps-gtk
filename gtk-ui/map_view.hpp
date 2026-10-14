@@ -11,7 +11,7 @@
 #include <functional>
 #include <memory>
 
-namespace omgtk
+namespace lichen
 {
 // The map: a GtkGLArea that composes frames produced by the drape render thread and feeds raw
 // touches to the engine (it recognizes taps, long taps, drags, pinch and rotation itself, like on
@@ -81,4 +81,4 @@ private:
   bool m_mousePressed = false;
   double m_pinchScale = 1.0;
 };
-}  // namespace omgtk
+}  // namespace lichen

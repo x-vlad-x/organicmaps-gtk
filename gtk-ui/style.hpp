@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <string>
 
-namespace omgtk
+namespace lichen
 {
 inline constexpr char kAppCss[] = R"css(
 .map-view { background-color: #ece9e2; }
@@ -108,4 +108,4 @@ std::string FormatSize(uint64_t bytes);
 std::string FormatDistance(double meters);
 std::string FormatDuration(double seconds);
 std::string FormatArrivalTime(double secondsFromNow);
-}  // namespace omgtk
+}  // namespace lichen

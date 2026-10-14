@@ -15,7 +15,7 @@ case "$TARGET" in
 esac
 CORE_TAG=2026.09.29-32-android
 CORE_COMMIT=b20d1417eef1e3c63a447ac8658db4307a066024
-JOBS="${OMGTK_BUILD_JOBS:-8}"
+JOBS="${LICHEN_BUILD_JOBS:-8}"
 for tool in podman git python3; do
   command -v "$tool" >/dev/null || { echo "Required tool is missing: $tool" >&2; exit 1; }
 done
@@ -46,9 +46,9 @@ build_target() {
   podman run --rm --network=none --userns=keep-id -v "$ROOT:/src:z" -w /src "$image" \
     cmake -S organicmaps -B "$build" -G Ninja -DCMAKE_BUILD_TYPE=Release \
     -DSKIP_QT_GUI=ON -DBUILD_TESTING=OFF -DOMIM_GTK_APP_DIR=/src/gtk-ui \
-    -DOMGTK_PREPARED_ICONS=/src/out/package-icons -DCMAKE_INSTALL_PREFIX=/usr "$@"
+    -DLICHEN_PREPARED_ICONS=/src/out/package-icons -DCMAKE_INSTALL_PREFIX=/usr "$@"
   podman run --rm --network=none --userns=keep-id -v "$ROOT:/src:z" -w /src "$image" \
-    cmake --build "$build" --target organicmaps-gtk -j "$JOBS"
+    cmake --build "$build" --target lichen -j "$JOBS"
   python3 tools/package.py "$target" --build-dir "$build" --container "$image"
 }
 
@@ -67,7 +67,7 @@ build_package() {
     local image=localhost/om-desktop build=build-appimage
     if [[ "$arch" == arm64 ]]; then image=localhost/om-desktop-arm64; build=build-appimage-arm64; fi
     build_target "$format" "$image" build-env/Containerfile.desktop "$build" \
-      -DOMGTK_PHONE_GLIBC_COMPAT=OFF
+      -DLICHEN_PHONE_GLIBC_COMPAT=OFF
   fi
 }
 if [[ "$TARGET" == all ]]; then

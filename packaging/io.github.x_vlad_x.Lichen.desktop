@@ -1,7 +1,8 @@
 [Desktop Entry]
 Type=Application
 Version=1.0
-Name=Organic Maps (GTK)
+Name=Lichen
+GenericName=Offline Maps
 Comment=Detailed Offline Maps of the World
 Comment[ast]=Mapes detallaos del mundu ensin conexón
 Comment[ca]=Mapes detallats del món sense connexió
@@ -9,11 +10,11 @@ Comment[es]=Mapas detallados del mundo sin conexión
 Comment[ru]=Подробная оффлайновая карта мира
 Comment[zh_CN]=详细的离线世界地图
 Comment[zh_TW]=詳細的離線世界地圖
-Icon=io.github.x_vlad_x.OrganicMapsGtk
-Exec=organicmaps-gtk %U
+Icon=io.github.x_vlad_x.Lichen
+Exec=lichen %U
 Terminal=false
 StartupNotify=true
 Categories=Education;Maps;Geography;GTK;
-Keywords=Map;Maps;Offline Maps;Navigation;GPS;Organic Maps;OrganicMaps;OSM;OpenStreetMap;
+Keywords=Map;Maps;Offline Maps;Navigation;GPS;OSM;OpenStreetMap;
 MimeType=application/vnd.google-earth.kml+xml;application/vnd.google-earth.kmz;application/gpx+xml;application/geo+json;x-scheme-handler/geo;x-scheme-handler/om;
 X-Purism-FormFactor=Workstation;Mobile;

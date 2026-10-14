@@ -25,8 +25,12 @@ def main():
     for icon in sorted(vector.glob("ic_roundabout_exit_*.xml")) + [vector / "ic_turn_round.xml"]:
         name = "om-" + icon.stem.removeprefix("ic_").replace("_", "-")
         convert(str(icon), str(destination / f"{name}.svg"), True)
-    app_id = "io.github.x_vlad_x.OrganicMapsGtk"
-    app_icon = Path(__file__).resolve().parents[1] / "packaging" / f"{app_id}.png"
+    app_id = "io.github.x_vlad_x.Lichen"
+    packaging = Path(__file__).resolve().parents[1] / "packaging"
+    app_icon = packaging / f"{app_id}.png"
+    scalable = destination / "hicolor" / "scalable" / "apps" / f"{app_id}.svg"
+    scalable.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(packaging / f"{app_id}.svg", scalable)
     for size in (48, 64, 128, 256, 512):
         target = destination / "hicolor" / f"{size}x{size}" / "apps" / f"{app_id}.png"
         target.parent.mkdir(parents=True, exist_ok=True)

@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace omgtk
+namespace lichen
 {
 class MainWindow;
 
@@ -55,4 +55,4 @@ private:
   bool m_isOpen = false;
   size_t m_coordFormat = 0;
 };
-}  // namespace omgtk
+}  // namespace lichen

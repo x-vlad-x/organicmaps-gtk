@@ -12,10 +12,13 @@ GTK integration patch. Attribution and links to the Organic Maps Project and
 OpenStreetMap are shown on the map, in the main menu and in About.
 
 The binary maps and other compiled data have the additional terms in upstream
-`DATA_LICENSE.txt`. The preview retains the Organic Maps name and upstream icon,
-identifies itself as an unofficial GTK interface, and does not claim endorsement.
-A new name or replacement branding requires a separate review of the upstream
-data-license rebranding clause; this preview does not perform that change.
+`DATA_LICENSE.txt`. Its third condition requires explicit written permission from
+the Organic Maps team for white-labeling or rebranding. Releases up to 0.1.0-preview5
+used the Organic Maps name and upstream icon. From 0.1.0-preview6 the interface is
+named Lichen with its own icon, keeps the attribution required by the data license
+("Map data © OpenStreetMap and Organic Maps" with links, on the map, in the main
+menu and in About) and does not claim endorsement. Do not publish a Lichen release
+until Organic Maps has granted that permission in writing.
 
 ## Software in the packages
 
@@ -33,8 +36,8 @@ data-license rebranding clause; this preview does not perform that change.
   including the LGPL libfuse license. `runtime-sources.json` pins its source commit
   and the source archives for libfuse and squashfuse used by its build scripts.
 
-Inside the installed packages, see `usr/share/doc/organicmaps-gtk` (or
-`/usr/share/doc/organicmaps-gtk` for the DEB). The `upstream`, `compiler-runtime`,
+Inside the installed packages, see `usr/share/doc/lichen` (or
+`/usr/share/doc/lichen` for the DEB). The `upstream`, `compiler-runtime`,
 `bundled` and `appimage-runtime` directories contain the applicable notices and
 license texts. The last two directories are specific to the AppImage.
 
@@ -47,7 +50,7 @@ patches, retrieved using SHA-256 from signed APT metadata, plus AppImage runtime
 sources. The JSON inventories identify the source versions of the shipped files.
 
 For Fedora, install the spec's build dependencies and rebuild the source RPM with
-`rpmbuild --rebuild organicmaps-gtk-<version>-1.fc44.src.rpm`. The source RPM is
+`rpmbuild --rebuild lichen-<version>-1.fc44.src.rpm`. The source RPM is
 shared by x86_64 and aarch64; build it natively on the target architecture.
 
 Use `dpkg-source -x package_version.dsc` to reconstruct a Debian source package.

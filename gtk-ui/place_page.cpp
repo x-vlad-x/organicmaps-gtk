@@ -27,7 +27,7 @@
 
 #include <ctime>
 
-namespace omgtk
+namespace lichen
 {
 namespace
 {
@@ -704,4 +704,4 @@ void PlacePage::Share()
   CopyToClipboard(data.m_text.empty() ? data.m_url : data.m_text);
   ShowToast(TF("copied_to_clipboard", {data.m_url}));
 }
-}  // namespace omgtk
+}  // namespace lichen

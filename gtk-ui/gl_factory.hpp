@@ -11,7 +11,7 @@
 #include <memory>
 #include <mutex>
 
-namespace omgtk
+namespace lichen
 {
 // Offscreen colour+depth/stencil target living in the render thread's context.
 // Only its texture is shared with the GTK context that composes the frame.
@@ -97,4 +97,4 @@ private:
   std::unique_ptr<GtkUploadContext> m_upload;
   std::atomic<bool> m_shutdown = false;
 };
-}  // namespace omgtk
+}  // namespace lichen

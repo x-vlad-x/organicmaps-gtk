@@ -18,6 +18,8 @@ import core_source
 from package_matrix import APP_ID, APPIMAGE_NAME, DOC, PACKAGE, PRIVATE, debian_version
 
 ROOT = Path(__file__).resolve().parents[1]
+# Newest glibc symbol version known to exist on the FuriOS phone (required by 0.1.0-preview5).
+PHONE_GLIBC = (2, 40)
 
 
 def run(command, **kwargs):
@@ -110,7 +112,18 @@ def prepare_stage(args):
     return stage, architecture, version
 
 
+def check_phone_glibc(args, binary):
+    """Fail early if the phone build needs a glibc symbol newer than the phone provides."""
+    if "LICHEN_PHONE_GLIBC_COMPAT:BOOL=ON" not in (args.build_dir / "CMakeCache.txt").read_text():
+        return
+    symbols = execute(args, ["aarch64-linux-gnu-objdump", "-T", inside(args, binary)], capture=True).stdout
+    versions = {(int(major), int(minor)) for major, minor in re.findall(r"GLIBC_(\d+)\.(\d+)", symbols)}
+    if too_new := sorted(v for v in versions if v > PHONE_GLIBC):
+        raise RuntimeError(f"The phone build needs glibc {too_new}; extend gtk-ui/glibc_compat.c")
+
+
 def build_deb(args, stage, architecture, version):
+    check_phone_glibc(args, stage / PRIVATE / "bin/lichen")
     workspace = stage.parent
     maintainer = "Vladislav Shadiuk <6992531+x-vlad-x@users.noreply.github.com>"
     debian = workspace / "debian"

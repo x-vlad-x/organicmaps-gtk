@@ -13,10 +13,10 @@ index 2146a5f..e1de661 100644
      add_subdirectory(icu)
      add_subdirectory(harfbuzz)
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 71868df..93561b3 100644
+index 71868df..87ecfa7 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -173,7 +173,7 @@ if (USE_PCH)
+@@ -173,12 +173,18 @@ if (USE_PCH)
  endif()
  
  # Should be on the root level, not in 3party, so tests can get these dependencies.
@@ -25,7 +25,18 @@ index 71868df..93561b3 100644
    find_package(ICU COMPONENTS uc i18n data REQUIRED)
    find_package(Freetype REQUIRED)
    find_package(harfbuzz REQUIRED)
-@@ -221,6 +221,8 @@ elseif(EXISTS "${OMIM_ROOT}/.venv")
+ endif()
+ 
++# The GTK app depends on the Qt symbols it uses, not on the Qt minor version of the build
++# container, so one phone package installs on several distribution snapshots.
++if (OMIM_GTK_APP_DIR)
++  add_compile_definitions(QT_NO_VERSION_TAGGING)
++endif()
++
+ if (WITH_SYSTEM_PROVIDED_3PARTY)
+   set(GFLAGS_USE_TARGET_NAMESPACE ON)
+   find_package(gflags REQUIRED)
+@@ -221,6 +227,8 @@ elseif(EXISTS "${OMIM_ROOT}/.venv")
    message(STATUS "==> Python Virtual Environment detected : ${OMIM_ROOT}/.venv"  "  ==>  "  "Using python command: ${Python3_EXECUTABLE}" )
  endif()
  
@@ -34,7 +45,7 @@ index 71868df..93561b3 100644
  execute_process(
      COMMAND ${Python3_EXECUTABLE} -c "import google.protobuf;
  print(google.protobuf.__version__)"
-@@ -239,11 +241,12 @@ if(PROTOBUF_CHECK EQUAL 0)
+@@ -239,11 +247,12 @@ if(PROTOBUF_CHECK EQUAL 0)
  else()
      message(FATAL_ERROR "Python protobuf not found. Run ./configure.sh to provision a local .venv with the correct version (>=3.20, <4.0), or set SKIP_PYTHON_VENV=1 to manage protobuf via your system Python.")
  endif()
@@ -48,7 +59,7 @@ index 71868df..93561b3 100644
    add_subdirectory(dev_sandbox)
    add_subdirectory(generator)
    add_subdirectory(tools)
-@@ -256,6 +259,11 @@ if (PLATFORM_DESKTOP)
+@@ -256,6 +265,11 @@ if (PLATFORM_DESKTOP)
    endif()
  endif()
  

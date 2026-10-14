@@ -15,6 +15,8 @@ if (LICHEN_PHONE_GLIBC_COMPAT)
     message(FATAL_ERROR "LICHEN_PHONE_GLIBC_COMPAT is only supported on aarch64")
   endif()
   list(APPEND SRC ${CMAKE_CURRENT_SOURCE_DIR}/glibc_compat.c)
+  # CoMaps builds releases with LTO, which drops the .symver alias of the shim.
+  set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/glibc_compat.c PROPERTIES COMPILE_OPTIONS -fno-lto)
 endif()
 
 get_filename_component(LICHEN_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)

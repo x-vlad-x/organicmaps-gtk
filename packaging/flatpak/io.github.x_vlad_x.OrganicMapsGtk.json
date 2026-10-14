@@ -1,0 +1,157 @@
+{
+  "id": "io.github.x_vlad_x.OrganicMapsGtk",
+  "runtime": "org.gnome.Platform",
+  "runtime-version": "51",
+  "sdk": "org.gnome.Sdk",
+  "command": "organicmaps-gtk",
+  "finish-args": [
+    "--share=ipc",
+    "--share=network",
+    "--socket=wayland",
+    "--socket=fallback-x11",
+    "--socket=pulseaudio",
+    "--device=dri",
+    "--system-talk-name=net.hadess.SensorProxy"
+  ],
+  "cleanup": [
+    "/include",
+    "/lib/cmake",
+    "/lib/pkgconfig",
+    "*.la",
+    "*.a"
+  ],
+  "modules": [
+    {
+      "name": "qtbase",
+      "buildsystem": "cmake-ninja",
+      "builddir": true,
+      "config-opts": [
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DQT_BUILD_EXAMPLES=OFF",
+        "-DQT_BUILD_TESTS=OFF",
+        "-DFEATURE_gui=OFF",
+        "-DFEATURE_widgets=OFF",
+        "-DFEATURE_concurrent=OFF",
+        "-DFEATURE_dbus=OFF",
+        "-DFEATURE_sql=OFF",
+        "-DFEATURE_testlib=OFF",
+        "-DFEATURE_xml=OFF",
+        "-DFEATURE_glib=ON",
+        "-DFEATURE_icu=ON",
+        "-DFEATURE_openssl_runtime=ON",
+        "-DFEATURE_system_pcre2=ON",
+        "-DFEATURE_system_zlib=ON",
+        "-DINSTALL_INCLUDEDIR=include/qt6",
+        "-DINSTALL_ARCHDATADIR=lib/qt6",
+        "-DINSTALL_PLUGINSDIR=lib/qt6/plugins",
+        "-DINSTALL_LIBEXECDIR=lib/qt6/libexec",
+        "-DINSTALL_MKSPECSDIR=lib/qt6/mkspecs",
+        "-DINSTALL_DATADIR=share/qt6"
+      ],
+      "cleanup": [
+        "/bin",
+        "/lib/qt6/libexec",
+        "/lib/qt6/metatypes",
+        "/lib/qt6/mkspecs",
+        "/lib/qt6/modules",
+        "/lib/qt6/sbom",
+        "/lib/*.prl",
+        "/share/qt6"
+      ],
+      "sources": [
+        {
+          "type": "archive",
+          "url": "https://download.qt.io/official_releases/qt/6.11/6.11.2/submodules/qtbase-everywhere-src-6.11.2.tar.xz",
+          "sha256": "5b2e00eccaf5a4d8c14134ffa0ea8dfd0a35ae1ffc7f8d87fa4305a1ed23cf22"
+        }
+      ]
+    },
+    {
+      "name": "pcaudiolib",
+      "buildsystem": "autotools",
+      "config-opts": [
+        "--disable-static",
+        "--with-pulseaudio",
+        "--without-alsa",
+        "--without-oss"
+      ],
+      "sources": [
+        {
+          "type": "git",
+          "url": "https://github.com/espeak-ng/pcaudiolib.git",
+          "tag": "1.3",
+          "commit": "e907571bad7dee296fb56a409a0f7c5a0c57d38a",
+          "x-checker-data": {
+            "type": "git",
+            "tag-pattern": "^([\\d.]+)$"
+          }
+        }
+      ]
+    },
+    {
+      "name": "espeak-ng",
+      "buildsystem": "autotools",
+      "no-parallel-make": true,
+      "config-opts": [
+        "--disable-static",
+        "--with-mbrola=no",
+        "--with-sonic=no"
+      ],
+      "cleanup": [
+        "/share/vim"
+      ],
+      "sources": [
+        {
+          "type": "git",
+          "url": "https://github.com/espeak-ng/espeak-ng.git",
+          "tag": "1.52.0",
+          "commit": "4870adfa25b1a32b4361592f1be8a40337c58d6c",
+          "x-checker-data": {
+            "type": "git",
+            "tag-pattern": "^([\\d.]+)$"
+          }
+        }
+      ]
+    },
+    {
+      "name": "organicmaps-gtk",
+      "buildsystem": "simple",
+      "build-commands": [
+        "for patch in patches/*.patch; do patch -d organicmaps -p1 < \"$patch\"; done",
+        "python3 tools/prepare_package_assets.py organicmaps build-icons",
+        "cmake -S organicmaps -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${FLATPAK_DEST} -DSKIP_QT_GUI=ON -DBUILD_TESTING=OFF -DOMIM_GTK_APP_DIR=${PWD}/gtk-ui -DOMGTK_PREPARED_ICONS=${PWD}/build-icons -DOMGTK_STATIC_COMPILER_RUNTIME=OFF -DOMGTK_PHONE_GLIBC_COMPAT=OFF -DOMGTK_CORE_QT_VERSION=2026.09.29-32-b20d1417-Linux -DOMGTK_CORE_INT_VERSION=260929",
+        "cmake --build build --target organicmaps-gtk -j ${FLATPAK_BUILDER_N_JOBS}",
+        "cmake --install build --component OrganicMapsGtk",
+        "test \"$(${FLATPAK_DEST}/libexec/organicmaps-gtk/bin/organicmaps-gtk --version)\" = \"$(cat VERSION)\""
+      ],
+      "cleanup": [
+        "/bin/organicmaps-gtk-migrate-launcher"
+      ],
+      "sources": [
+        {
+          "type": "dir",
+          "path": "../..",
+          "skip": [
+            "build-aarch64",
+            "build-appimage",
+            "build-appimage-arm64",
+            "build-flatpak",
+            "build-x86_64",
+            ".flatpak-builder",
+            ".git",
+            "organicmaps",
+            "out",
+            "repo-flatpak"
+          ]
+        },
+        {
+          "type": "git",
+          "url": "https://github.com/organicmaps/organicmaps.git",
+          "tag": "2026.09.29-32-android",
+          "commit": "b20d1417eef1e3c63a447ac8658db4307a066024",
+          "dest": "organicmaps"
+        }
+      ]
+    }
+  ]
+}

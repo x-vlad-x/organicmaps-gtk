@@ -13,7 +13,7 @@ URL:            https://github.com/x-vlad-x/organicmaps-gtk
 Source0:        OrganicMapsGtk-%{app_version}-full-sources.tar.gz
 BuildRequires:  gcc-c++ cmake ninja-build pkgconf-pkg-config python3 git
 BuildRequires:  gtk4-devel libadwaita-devel geoclue2-devel qt6-qtbase-devel
-BuildRequires:  libglvnd-devel libepoxy-devel ImageMagick desktop-file-utils
+BuildRequires:  libglvnd-devel libepoxy-devel ImageMagick desktop-file-utils appstream
 BuildRequires:  libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
 Requires:       espeak-ng hicolor-icon-theme
 # libepoxy loads the GLES/EGL entry points dynamically, outside automatic ELF dependencies.
@@ -45,6 +45,7 @@ python3 tools/prepare_rpm_metadata.py %{buildroot}
 
 %check
 desktop-file-validate %{buildroot}%{_datadir}/applications/io.github.x_vlad_x.OrganicMapsGtk.desktop
+appstreamcli validate --no-net %{buildroot}%{_metainfodir}/io.github.x_vlad_x.OrganicMapsGtk.metainfo.xml
 test "$(%{buildroot}%{_libexecdir}/organicmaps-gtk/bin/organicmaps-gtk --version)" = "%{app_version}"
 
 %files
@@ -53,6 +54,7 @@ test "$(%{buildroot}%{_libexecdir}/organicmaps-gtk/bin/organicmaps-gtk --version
 %{_bindir}/organicmaps-gtk-migrate-launcher
 %{_libexecdir}/organicmaps-gtk/
 %{_datadir}/applications/io.github.x_vlad_x.OrganicMapsGtk.desktop
+%{_metainfodir}/io.github.x_vlad_x.OrganicMapsGtk.metainfo.xml
 %{_datadir}/icons/hicolor/*/apps/io.github.x_vlad_x.OrganicMapsGtk.png
 %license %{_docdir}/organicmaps-gtk/LICENSE
 %license %{_docdir}/organicmaps-gtk/NOTICE

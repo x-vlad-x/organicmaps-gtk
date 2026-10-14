@@ -9,6 +9,7 @@ import re
 import subprocess
 import tarfile
 
+import flatpak_manifest
 from prepare_release import digest
 from package_matrix import TARGETS, ARCHITECTURES, stage_path, package_name, srpm_name, validate_elf
 
@@ -36,6 +37,7 @@ def check():
     notes = (ROOT / "packaging/RELEASE-NOTES.md").read_text()
     if not notes.splitlines()[0].startswith(f"# Organic Maps (GTK) {version} "):
         raise ValueError("Update RELEASE-NOTES.md for VERSION before building a release")
+    flatpak_manifest.check()
     if run("git", "status", "--porcelain"):
         raise ValueError("Build only from a clean source commit")
     return version

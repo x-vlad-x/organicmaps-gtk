@@ -71,11 +71,51 @@ The source RPM contains project sources; it does not need to clone repositories.
 Distribution build dependencies must already be installed. RPMs are unsigned for
 now; checksums identify release files but are not a signing key.
 
+## Flatpak
+
+`packaging/flatpak/io.github.x_vlad_x.OrganicMapsGtk.json` builds the application on the
+GNOME 51 runtime for x86_64 and aarch64. The runtime provides GTK, libadwaita and
+GeoClue; the manifest builds a minimal Qt 6 (Core and Network, used by the core),
+pcaudiolib and eSpeak NG, then the pinned core with the included patches.
+Navigation and application icons are converted with the SDK's libwebp tools
+(`cwebp`, `dwebp`), so ImageMagick is not needed inside the SDK.
+
+Build and install locally with `flatpak-builder` 1.4 or newer:
+
+```sh
+flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak-builder --user --install-deps-from=flathub --install --force-clean \
+  build-flatpak packaging/flatpak/io.github.x_vlad_x.OrganicMapsGtk.json
+flatpak run io.github.x_vlad_x.OrganicMapsGtk
+```
+
+The sandbox has network access for map downloads, Wayland with X11 fallback, GPU
+and PulseAudio for voice guidance. Location goes through the XDG location portal
+(libgeoclue selects it automatically inside Flatpak); the compass needs read access
+to iio-sensor-proxy on the system bus. Files are imported through the file chooser
+portal. Maps, settings and bookmarks live in `~/.var/app/io.github.x_vlad_x.OrganicMapsGtk/`
+and are not shared with DEB, RPM or AppImage installations.
+
+The repository manifest builds the working tree. For a Flathub submission, generate
+the variant that builds the release tag from Git, pinned to its commit:
+
+```sh
+python3 tools/flatpak_manifest.py flathub --output io.github.x_vlad_x.OrganicMapsGtk.json
+```
+
+`tools/flatpak_manifest.py check` (also part of `tools/ci_release.py check`) keeps the
+manifest's core pin and version options equal to `tools/build-packages.sh`, and requires
+the AppStream metadata to list `VERSION` as its newest release. When releasing, add the
+new `<release>` entry to `packaging/io.github.x_vlad_x.OrganicMapsGtk.metainfo.xml`.
+Its screenshots are JPEG copies in `docs/screenshots/appstream/`, referenced from `main`.
+
 ## GitHub Actions
 
 [Checks](../.github/workflows/checks.yml) validates packaging tests, scripts and
 metadata on `main` pushes and pull requests. [Packages](../.github/workflows/packages.yml)
-builds all six targets independently. ARM64 RPM/AppImage use native
+builds all six targets independently. [Flatpak](../.github/workflows/flatpak.yml)
+runs the Flathub linter on the manifest and builds bundles for both architectures
+in the Flathub build container on tags and manual runs. ARM64 RPM/AppImage use native
 `ubuntu-24.04-arm` runners; their containers pull the native aarch64 images.
 
 The pipeline checks:

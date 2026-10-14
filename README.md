@@ -60,6 +60,7 @@ locale.
 ## Building and installing
 
 Development builds provide DEB, RPM and AppImage for both x86_64 and ARM64.
+A Flatpak manifest for the GNOME runtime is in `packaging/flatpak/`.
 Build recipes, source collection and release preparation are described in
 [packaging/README.md](packaging/README.md).
 The original SSH installation method remains available below.

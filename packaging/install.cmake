@@ -34,6 +34,8 @@ install(PROGRAMS "${OMGTK_ROOT}/packaging/organicmaps-gtk-migrate-launcher"
   DESTINATION bin COMPONENT ${OMGTK_COMPONENT})
 install(FILES "${OMGTK_ROOT}/packaging/${OMGTK_APP_ID}.desktop"
   DESTINATION share/applications COMPONENT ${OMGTK_COMPONENT})
+install(FILES "${OMGTK_ROOT}/packaging/${OMGTK_APP_ID}.metainfo.xml"
+  DESTINATION share/metainfo COMPONENT ${OMGTK_COMPONENT})
 install(DIRECTORY "${OMGTK_GENERATED_ICONS}/hicolor/"
   DESTINATION share/icons/hicolor COMPONENT ${OMGTK_COMPONENT})
 install(DIRECTORY "${OMGTK_ROOT}/gtk-ui/icons/" "${OMGTK_GENERATED_ICONS}/"

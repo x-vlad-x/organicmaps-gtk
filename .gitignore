@@ -7,3 +7,7 @@
 /build-appimage-arm64/
 /out/
 __pycache__/
+# Flatpak build state and output
+/.flatpak-builder/
+/build-flatpak/
+/repo-flatpak/

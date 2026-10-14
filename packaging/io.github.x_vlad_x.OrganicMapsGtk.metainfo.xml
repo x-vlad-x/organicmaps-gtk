@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2026 Vladislav Shadiuk -->
+<component type="desktop-application">
+  <id>io.github.x_vlad_x.OrganicMapsGtk</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Apache-2.0</project_license>
+
+  <name>Organic Maps (GTK)</name>
+  <summary>Offline maps and navigation</summary>
+  <developer id="io.github.x_vlad_x">
+    <name>Vladislav Shadiuk</name>
+  </developer>
+
+  <description>
+    <p>
+      An unofficial native GNOME interface for the Organic Maps core, made for Linux phones
+      and usable on desktops. Maps, search and routing work without an internet connection
+      once the regions you need are downloaded.
+    </p>
+    <ul>
+      <li>Full-screen GPU map with touch gestures: drag, pinch, rotation, double tap</li>
+      <li>Offline search with categories, history and results on the map</li>
+      <li>Routing for car, walking, cycling and public transport, with turn-by-turn voice guidance</li>
+      <li>Map downloader with region search and updates</li>
+      <li>Bookmarks and tracks, KML, KMZ and GPX import, track recording</li>
+      <li>Outdoor, hiking, cycling, isoline and subway layers; night mode</li>
+    </ul>
+    <p>
+      This application is not affiliated with or endorsed by the Organic Maps project.
+      Map data © OpenStreetMap contributors.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">io.github.x_vlad_x.OrganicMapsGtk.desktop</launchable>
+
+  <url type="homepage">https://github.com/x-vlad-x/organicmaps-gtk</url>
+  <url type="bugtracker">https://github.com/x-vlad-x/organicmaps-gtk/issues</url>
+  <url type="vcs-browser">https://github.com/x-vlad-x/organicmaps-gtk</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Place page</caption>
+      <image>https://raw.githubusercontent.com/x-vlad-x/organicmaps-gtk/main/docs/screenshots/appstream/place-page.jpg</image>
+    </screenshot>
+    <screenshot>
+      <caption>Search</caption>
+      <image>https://raw.githubusercontent.com/x-vlad-x/organicmaps-gtk/main/docs/screenshots/appstream/search.jpg</image>
+    </screenshot>
+    <screenshot>
+      <caption>Route planning</caption>
+      <image>https://raw.githubusercontent.com/x-vlad-x/organicmaps-gtk/main/docs/screenshots/appstream/route.jpg</image>
+    </screenshot>
+    <screenshot>
+      <caption>Turn-by-turn navigation</caption>
+      <image>https://raw.githubusercontent.com/x-vlad-x/organicmaps-gtk/main/docs/screenshots/appstream/navigation.jpg</image>
+    </screenshot>
+    <screenshot>
+      <caption>Map downloader</caption>
+      <image>https://raw.githubusercontent.com/x-vlad-x/organicmaps-gtk/main/docs/screenshots/appstream/downloader.jpg</image>
+    </screenshot>
+    <screenshot>
+      <caption>Night mode</caption>
+      <image>https://raw.githubusercontent.com/x-vlad-x/organicmaps-gtk/main/docs/screenshots/appstream/night-mode.jpg</image>
+    </screenshot>
+  </screenshots>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#b5e3c4</color>
+    <color type="primary" scheme_preference="dark">#0d3f24</color>
+  </branding>
+
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>touch</control>
+  </supports>
+  <recommends>
+    <internet>first-run</internet>
+  </recommends>
+
+  <content_rating type="oars-1.1"/>
+
+  <releases>
+    <release version="0.1.0~preview5" date="2026-10-14">
+      <description>
+        <p>Native Fedora packages and builds for both x86_64 and ARM64.</p>
+      </description>
+    </release>
+  </releases>
+</component>
